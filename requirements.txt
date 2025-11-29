@@ -1,3 +1,4 @@
-loadenv
+python-dotenv
 django-htmx
 requests
+typing_extensions

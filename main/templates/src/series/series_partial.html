@@ -2,7 +2,7 @@
 <h1>Search Manga</h1>
 
 <div class="flex gap-4">
-<form hx-get="/paper/" 
+<form hx-get="/series/" 
 hx-target="#manga-results" 
 hx-select="#manga-results" 
 hx-trigger="submit"
@@ -15,7 +15,7 @@ hx-indicator="#loader">
            required
            class="p-2 rounded bg-gray-700 border border-gray-800 focus:ring focus:ring-blue-600 text-white">
 
-    <button type="submit" class="ml-2 p-2 bg-blue-600 rounded hover:bg-blue-700">Search</button>
+    <button type="submit" class="ml-2 p-2 bg-blue-800 rounded hover:bg-blue-700">Search</button>
 </form>
 <span id="loader" class="loading htmx-indicator"></span>
 </div>
@@ -37,7 +37,7 @@ hx-indicator="#loader">
                     {% endif %}
                     <div class="p-2">
                     <a 
-                        hx-get="/paper/{{ manga.record.series_id }}/" 
+                        hx-get="/series/{{ manga.record.series_id }}/" 
                         hx-target="#content" 
                         hx-push-url="true"
                         class="underline cursor-pointer">
@@ -58,8 +58,8 @@ hx-indicator="#loader">
 
 <!--
 <ul>
-    {% include "components/paper_card.html" with paper_id=1 title="Paper 1" %}
-    {% include "components/paper_card.html" with paper_id=2 title="Paper 2" %}
-    {% include "components/paper_card.html" with paper_id=3 title="Paper 3" %}
+    {% include "components/series_card.html" with series_id=1 title="series 1" %}
+    {% include "components/series_card.html" with series_id=2 title="series 2" %}
+    {% include "components/series_card.html" with series_id=3 title="series 3" %}
 </ul>
  -->
