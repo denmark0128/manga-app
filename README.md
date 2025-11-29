@@ -1,4 +1,8 @@
-git clone repo_url
+steps to install: 
+open powershell then type:
+
+git clone https://github.com/denmark0128/manga-app.git
+
 cd projectone
 
 python -m venv venv
