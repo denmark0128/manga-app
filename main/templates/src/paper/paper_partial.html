@@ -1,0 +1,65 @@
+
+<h1>Search Manga</h1>
+
+<div class="flex gap-4">
+<form hx-get="/paper/" 
+hx-target="#manga-results" 
+hx-select="#manga-results" 
+hx-trigger="submit"
+hx-indicator="#loader">
+    <input type="text" 
+           id="search" 
+           name="search" 
+           placeholder="Search manga..." 
+           value="{{ search_query }}"
+           required
+           class="p-2 rounded bg-gray-700 border border-gray-800 focus:ring focus:ring-blue-600 text-white">
+
+    <button type="submit" class="ml-2 p-2 bg-blue-600 rounded hover:bg-blue-700">Search</button>
+</form>
+<span id="loader" class="loading htmx-indicator"></span>
+</div>
+
+
+<div id="manga-results" class="mt-4">
+    {% if manga_results %}
+        <ul class="">
+        {% for manga in manga_results %}
+            <li class="p-2">
+                <div class="p-2 bg-[#0d1117] border border-gray-800 flex">
+                    {% if manga.record.image.url.thumb %}
+                    <div class="overflow-hidden">
+                        <img src="{{ manga.record.image.url.thumb }}" 
+                             alt="{{ manga.record.title }}"
+                             loading="lazy"
+                             class="w-32 h-auto hover:scale-105 transition-transform mr-4">
+                    </div>
+                    {% endif %}
+                    <div class="p-2">
+                    <a 
+                        hx-get="/paper/{{ manga.record.series_id }}/" 
+                        hx-target="#content" 
+                        hx-push-url="true"
+                        class="underline cursor-pointer">
+                        <div class="">
+                            <h3>{{ manga.record.title }}</h3>
+                        </div>
+                    </a>
+                    <p>{{ manga.record.description|truncatewords:20 }}</p>
+                    </div>
+                </div>
+            </li>
+        {% endfor %}
+        </ul>
+    {% elif search_query %}
+        <p>No results found for "{{ search_query }}"</p>
+    {% endif %} 
+</div>
+
+<!--
+<ul>
+    {% include "components/paper_card.html" with paper_id=1 title="Paper 1" %}
+    {% include "components/paper_card.html" with paper_id=2 title="Paper 2" %}
+    {% include "components/paper_card.html" with paper_id=3 title="Paper 3" %}
+</ul>
+ -->

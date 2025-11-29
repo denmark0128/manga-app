@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+
+{% block title %}Home - My Django Site{% endblock %}
+
+{% block content %}
+<h1>Welcome to Django!</h1>
+<p>This is the homepage.</p>
+
+<div x-data="{ count: 0 }">
+    <button @click="count++">Add</button>
+    <p x-text="count"></p>
+</div>
+{% endblock %}

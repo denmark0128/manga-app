@@ -1,0 +1,77 @@
+
+{% if error_message %}
+    <div class="text-red-500 p-4">{{ error_message }}</div>
+{% elif manga %}
+    <div class="p-4">
+        <button onclick="history.back()" 
+        class="text-blue-400 hover:underline mb-4 inline-block">← Back to Search</button>
+        <div class="flex gap-4">
+            {% if manga.image.url.original %}
+                <img src="{{ manga.image.url.original }}" 
+                     alt="{{ manga.title }}"
+                     class="w-48 h-86">
+            {% endif %}
+            
+            <div class="flex-1">
+                <h1 class="text-3xl font-bold mb-2">{{ manga.title }}</h1>
+                
+                {% if manga.type %}
+                    <p class="text-gray-400 mb-2">Type: {{ manga.type }}</p>
+                {% endif %}
+                
+                {% if manga.year %}
+                    <p class="text-gray-400 mb-2">Year: {{ manga.year }}</p>
+                {% endif %}
+                
+                {% if manga.bayesian_rating %}
+                    <p class="text-gray-400 mb-2">Rating: {{ manga.bayesian_rating }}</p>
+                {% endif %}
+                
+                {% if manga.genres %}
+                    <div class="mb-4">
+                        <span class="font-semibold">Genres: </span>
+                        {% for genre in manga.genres %}
+                            <span class="bg-gray-700 px-2 py-1 rounded text-sm mr-1">{{ genre.genre }}</span>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+                {% if manga.description %}
+                    <div class="mt-4">
+                        <h2 class="text-xl font-semibold mb-2">Description</h2>
+                        <div id="description" class="text-gray-300 prose prose-invert max-w-none [&_a]:text-blue-400 [&_a]:hover:underline"></div>
+                    </div>
+                    
+                    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+                    <script>
+                        document.getElementById('description').innerHTML = marked.parse(`{{ manga.description|escapejs }}`);
+                    </script>
+                {% endif %}
+                {% if manga.related_series %}
+                    <div class="mt-4">
+                        <h2 class="text-xl font-semibold mb-2">Related Series</h2>
+                        <ul class="list-disc list-inside">
+                            {% for related in manga.related_series %}
+                                <li>
+                                    <a 
+                                    hx-get="/paper/{{ related.related_series_id }}/" 
+                                    hx-target="#content" 
+                                    hx-push-url="true"
+                                    class="text-blue-400 hover:underline cursor-pointer">
+                                        {{ related.title }} ({{ related.relation_type }})
+                                    </a>
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                {% endif %}
+
+            </div>
+        </div>
+    </div>
+{% else %}
+    <p>Loading...</p>
+{% endif %}
+
+
+
+

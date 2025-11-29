@@ -1,0 +1,22 @@
+# Byte-compiled / optimized / compiled files
+__pycache__/
+*.pyc
+ *.pyd
+*.pyo
+
+# Virtual environment
+venv/
+env/
+.env
+
+# Database
+db.sqlite3
+
+
+media/
+static/
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
