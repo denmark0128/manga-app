@@ -20,46 +20,107 @@ hx-indicator="#loader">
 <span id="loader" class="loading htmx-indicator"></span>
 </div>
 
-
 <div id="manga-results" class="mt-4">
     {% if manga_results %}
-        <ul class="">
+        <ul class="grid grid-cols-2 sm:grid-cols-1 gap-2">
         {% for manga in manga_results %}
-            <li class="p-2">
-                <div class="p-2 bg-[#0d1117] border border-gray-800 flex">
-                    {% if manga.record.image.url.thumb %}
-                    <div class="overflow-hidden">
-                        <img src="{{ manga.record.image.url.thumb }}" 
-                             alt="{{ manga.record.title }}"
-                             loading="lazy"
-                             class="w-32 h-auto hover:scale-105 transition-transform mr-4">
-                    </div>
-                    {% endif %}
-                    <div class="p-2">
-                    <a 
-                        hx-get="/series/{{ manga.record.series_id }}/" 
-                        hx-target="#content" 
-                        hx-push-url="true"
-                        class="underline cursor-pointer">
-                        <div class="">
-                            <h3>{{ manga.record.title }}</h3>
+            <li x-data="{ showOverlay: false }">
+                <div class="p-2 bg-[#0d1117] border border-gray-800 flex flex-col sm:flex-row gap-4 relative h-full">
+
+                    <div class="overflow-hidden flex-shrink-0 mx-auto sm:mx-0 relative">
+                        {% if manga.record.image.url.thumb %}
+                            <!-- IMAGE -->
+                            <img 
+                                src="{{ manga.record.image.url.thumb }}" 
+                                alt="{{ manga.record.title }}"
+                                loading="lazy"
+                                class="w-full sm:w-32 h-48 sm:h-auto object-cover hover:scale-105 transition-transform rounded cursor-pointer"
+                                @click="showOverlay = true"
+                            >
+                        {% else %}
+                            <!-- PLACEHOLDER for missing image -->
+                            <div class="w-full sm:w-32 h-48 sm:h-auto bg-gray-800 flex items-center justify-center rounded cursor-pointer"
+                                 @click="showOverlay = true">
+                                <svg class="w-12 h-12 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                </svg>
+                            </div>
+                        {% endif %}
+
+                        <!-- MOBILE OVERLAY -->
+                        <div 
+                            class="absolute inset-0 bg-black/70 flex flex-col justify-center items-center text-center p-4 sm:hidden"
+                            x-show="showOverlay"
+                            x-transition
+                            @click.away="showOverlay = false"
+                        >
+                            <h3 class="text-sm font-semibold mb-3 break-words line-clamp-3">
+                                {{ manga.record.title }}
+                            </h3>
+
+                            <button 
+                                class="bg-blue-600 px-3 py-2 rounded text-white text-sm"
+                                hx-get="/series/{{ manga.record.series_id }}/"
+                                hx-target="#content"
+                                hx-push-url="true"
+                            >
+                                View Series
+                            </button>
                         </div>
-                    </a>
-                    <p>{{ manga.record.description|truncatewords:20 }}</p>
                     </div>
+
+                    <!-- NORMAL DESKTOP TEXT -->
+                    <div class="p-2 flex-1 min-w-0 hidden sm:block">
+                        <a 
+                            hx-get="/series/{{ manga.record.series_id }}/"
+                            hx-target="#content"
+                            hx-push-url="true"
+                            class="underline cursor-pointer block"
+                        >
+                            <h3 class="font-semibold text-lg break-words">
+                                {{ manga.record.title }}
+                            </h3>
+                        </a>
+                        <p class="text-sm text-gray-300 break-words">
+                            {{ manga.record.description|truncatewords:20 }}
+                        </p>
+                    </div>
+
                 </div>
             </li>
         {% endfor %}
         </ul>
+
+        <!-- PAGINATION -->
+        {% if page_obj.has_other_pages %}
+        <div class="flex justify-center items-center gap-2 mt-6">
+            {% if page_obj.has_previous %}
+                <button 
+                    hx-get="/series/?search={{ search_query }}&page={{ page_obj.previous_page_number }}"
+                    hx-target="#manga-results"
+                    hx-select="#manga-results"
+                    class="px-4 py-2 bg-gray-700 rounded hover:bg-gray-600">
+                    Previous
+                </button>
+            {% endif %}
+
+            <span class="px-4 py-2 bg-gray-800 rounded">
+                Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+            </span>
+
+            {% if page_obj.has_next %}
+                <button 
+                    hx-get="/series/?search={{ search_query }}&page={{ page_obj.next_page_number }}"
+                    hx-target="#manga-results"
+                    hx-select="#manga-results"
+                    class="px-4 py-2 bg-gray-700 rounded hover:bg-gray-600">
+                    Next
+                </button>
+            {% endif %}
+        </div>
+        {% endif %}
+
     {% elif search_query %}
         <p>No results found for "{{ search_query }}"</p>
     {% endif %} 
 </div>
-
-<!--
-<ul>
-    {% include "components/series_card.html" with series_id=1 title="series 1" %}
-    {% include "components/series_card.html" with series_id=2 title="series 2" %}
-    {% include "components/series_card.html" with series_id=3 title="series 3" %}
-</ul>
- -->

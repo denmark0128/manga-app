@@ -1,5 +1,6 @@
 from django.shortcuts import render
 from django.core.cache import cache
+from django.core.paginator import Paginator
 import requests
 import hashlib
 
@@ -57,22 +58,72 @@ def home(request, series_id=None):
     elif path == '/contact/':
         template_name = 'contact/contact'
     elif path == '/series/':
-        # Get search from URL or session
-        search_query = request.GET.get('search', '').strip() or request.session.get('last_series_search', '')
-        manga_results = []
+        # Get search and page from URL
+        search_query = request.GET.get('search', '').strip()
+        page_number = request.GET.get('page', 1)
+        
+        # Fall back to session if no search query
+        if not search_query:
+            search_query = request.session.get('last_series_search', '')
+        
+        page_obj = None
         
         if search_query:
             # Save to session for later
             request.session['last_series_search'] = search_query
             
-            # Create safe cache key using hash
-            cache_key = f"manga_search_{hashlib.md5(search_query.lower().encode()).hexdigest()}"
-            cached_results = cache.get(cache_key)
+            # Create base cache key
+            search_hash = hashlib.md5(search_query.lower().encode()).hexdigest()
             
-            if cached_results:
-                manga_results = cached_results
-            else:
+            # Try to get paginator metadata from cache
+            paginator_cache_key = f"manga_paginator_{search_hash}"
+            cached_paginator_data = cache.get(paginator_cache_key)
+            
+            if cached_paginator_data:
+                # We have cached paginator data
+                num_pages = cached_paginator_data['num_pages']
+                per_page = cached_paginator_data['per_page']
+                total_count = cached_paginator_data['total_count']
+                
+                # Try to get this specific page from cache
+                page_cache_key = f"manga_page_{search_hash}_{page_number}"
+                cached_page = cache.get(page_cache_key)
+                
+                if cached_page:
+                    # Create a mock page object with cached data
+                    class CachedPage:
+                        def __init__(self, object_list, number, num_pages, has_next, has_previous):
+                            self.object_list = object_list
+                            self.number = number
+                            self.has_next = lambda: has_next
+                            self.has_previous = lambda: has_previous
+                            self.next_page_number = lambda: number + 1 if has_next else None
+                            self.previous_page_number = lambda: number - 1 if has_previous else None
+                            
+                            class MockPaginator:
+                                def __init__(self, num_pages, per_page, count):
+                                    self.num_pages = num_pages
+                                    self.per_page = per_page
+                                    self.count = count
+                            
+                            self.paginator = MockPaginator(num_pages, per_page, total_count)
+                        
+                        def has_other_pages(self):
+                            return self.paginator.num_pages > 1
+                    
+                    page_obj = CachedPage(
+                        cached_page['results'],
+                        int(page_number),
+                        num_pages,
+                        cached_page['has_next'],
+                        cached_page['has_previous']
+                    )
+                    print(f"Loaded page {page_number} from cache")
+            
+            # If not in cache, fetch from API
+            if not page_obj:
                 try:
+                    print(f"Fetching from API for search: {search_query}")
                     response = requests.post(
                         'https://api.mangaupdates.com/v1/series/search',
                         json={'search': search_query},
@@ -95,14 +146,39 @@ def home(request, series_id=None):
                             for result in full_results
                         ]
                         
-                        # Cache for 30 minutes
-                        cache.set(cache_key, manga_results, 60 * 30)
+                        # Paginate results
+                        per_page = 20
+                        paginator = Paginator(manga_results, per_page)
+                        page_obj = paginator.get_page(page_number)
+                        
+                        # Cache paginator metadata
+                        paginator_data = {
+                            'num_pages': paginator.num_pages,
+                            'per_page': per_page,
+                            'total_count': paginator.count
+                        }
+                        cache.set(paginator_cache_key, paginator_data, 60 * 30)
+                        
+                        # Cache each page separately
+                        for page_num in paginator.page_range:
+                            page = paginator.get_page(page_num)
+                            page_data = {
+                                'results': list(page.object_list),
+                                'has_next': page.has_next(),
+                                'has_previous': page.has_previous()
+                            }
+                            page_cache_key = f"manga_page_{search_hash}_{page_num}"
+                            cache.set(page_cache_key, page_data, 60 * 30)
+                        
+                        print(f"Cached {paginator.num_pages} pages for search: {search_query}")
+                        
                 except Exception as e:
                     print(f"API Error: {e}")
         
         context = {
             'search_query': search_query,
-            'manga_results': manga_results
+            'manga_results': page_obj.object_list if page_obj else [],
+            'page_obj': page_obj
         }
         template_name = 'series/series'
     elif path == '/upload/':
