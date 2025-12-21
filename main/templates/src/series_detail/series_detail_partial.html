@@ -2,7 +2,7 @@
 {% if error_message %}
     <div class="text-red-500 p-4">{{ error_message }}</div>
 {% elif manga %}
-    <div class="p-4">
+    <div>
         <button onclick="history.back()" 
         class="text-blue-400 hover:underline mb-4 inline-block">← Back to Search</button>
         <div class="flex gap-4">
@@ -27,6 +27,18 @@
                     <p class="text-gray-400 mb-2">Rating: {{ manga.bayesian_rating }}</p>
                 {% endif %}
                 
+                {% if manga.authors_clean %}
+                <p class="text-gray-400 mb-2">
+                    Author:
+                    {% for author in manga.authors_clean %}
+                        <a href="{% url 'author_detail' author.id %}"
+                        class="cursor-pointer hover:underline text-blue-400">
+                            {{ author.name }}
+                        </a>{% if not forloop.last %}, {% endif %}
+                    {% endfor %}
+                </p>
+                {% endif %}
+                
                 {% if manga.genres %}
                     <div class="mb-4">
                         <span class="font-semibold">Genres: </span>
@@ -38,13 +50,8 @@
                 {% if manga.description %}
                     <div class="mt-4">
                         <h2 class="text-xl font-semibold mb-2">Description</h2>
-                        <div id="description" class="text-gray-300 prose prose-invert max-w-none [&_a]:text-blue-400 [&_a]:hover:underline"></div>
+                        <div class="text-gray-300 prose prose-invert max-w-none [&_a]:text-blue-400 [&_a]:hover:underline whitespace-pre-wrap break-words">{{ manga.description }}</div>
                     </div>
-                    
-                    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-                    <script>
-                        document.getElementById('description').innerHTML = marked.parse(`{{ manga.description|escapejs }}`);
-                    </script>
                 {% endif %}
                 {% if manga.related_series %}
                     <div class="mt-4">

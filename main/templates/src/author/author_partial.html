@@ -1,0 +1,60 @@
+<div class="author-page p-4">
+
+    <!-- Author name and actual name -->
+    <h1 class="text-2xl font-bold">{{ author.name }}</h1>
+    {% if author.actualname %}
+        <p class="text-gray-400 mb-2" >Real Name: {{ author.actualname }}</p>
+    {% endif %}
+
+    <!-- Author image -->
+    
+    {% if author.image.url.thumb %}
+        <img src="{{ author.image.url.thumb }}" alt="{{ author.name }}" class="my-4 rounded-lg">
+    {% endif %}
+
+    <!-- Birthday & Zodiac -->
+    {% if author.birthday.as_string %}
+        <p class="text-gray-400 mb-2">Birthday: {{ author.birthday.as_string }}{% if author.birthday.zodiac %} ({{ author.birthday.zodiac }}){% endif %}</p>
+    {% endif %}
+
+    <!-- Birthplace & Blood type & Gender -->
+    {% if author.birthplace %}<p class="text-gray-400 mb-2">Birthplace: {{ author.birthplace }}</p>{% endif %}
+    {% if author.bloodtype %}<p class="text-gray-400 mb-2">Blood Type: {{ author.bloodtype }}</p>{% endif %}
+    {% if author.gender %}<p class="text-gray-400 mb-2">Gender: {{ author.gender }}</p>{% endif %}
+
+    <!-- Status -->
+    {% if author.status %}<p class="text-gray-400 mb-2">Status: {{ author.status }}</p>{% endif %}
+
+    <!-- Genres -->
+    {% if author.genres %}
+        <p class="text-gray-400 mb-2">Genres: {{ author.genres|join:", " }}</p>
+    {% endif %}
+
+    <!-- Associated -->
+    {% if author.associated %}
+        <p class="text-gray-400 mb-2">Associated: 
+            {% for a in author.associated %}
+                {{ a.name }}{% if not forloop.last %}, {% endif %}
+            {% endfor %}
+        </p>
+    {% endif %}
+
+    <!-- Stats -->
+    {% if author.stats.total_series %}
+        <p class="text-gray-400 mb-2">Total Series: {{ author.stats.total_series }}</p>
+    {% endif %}
+
+    <!-- Social links -->
+    <div class="social mt-2">
+        {% if author.social.officialsite %}
+            <a href="{{ author.social.officialsite }}" target="_blank" class="text-blue-400 underline">Official Site</a>
+        {% endif %}
+        {% if author.social.facebook %}
+            <a href="{{ author.social.facebook }}" target="_blank" class="ml-2 text-blue-400 underline">Facebook</a>
+        {% endif %}
+        {% if author.social.twitter %}
+            <a href="{{ author.social.twitter }}" target="_blank" class="ml-2 text-blue-400 underline">Twitter</a>
+        {% endif %}
+    </div>
+
+</div>

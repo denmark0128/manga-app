@@ -4,190 +4,290 @@ from django.core.paginator import Paginator
 import requests
 import hashlib
 
-def home(request, series_id=None):
-    # Get the current path
-    path = request.path
+
+def home(request):
+    """Home page view"""
     context = {}
     
-    # Check if it's a series detail page
-    if series_id:
-        manga_detail = None
-        error_message = None
-        
-        # Create cache key for detail page
-        cache_key = f"manga_detail_{series_id}"
-        cached_detail = cache.get(cache_key)
-        
-        if cached_detail:
-            manga_detail = cached_detail
-        else:
-            try:
-                print(f"Fetching manga details for ID: {series_id}")
-                response = requests.get(
-                    f'https://api.mangaupdates.com/v1/series/{series_id}',
-                    headers={'Content-Type': 'application/json'},
-                    timeout=10
-                )
-                print(f"Status Code: {response.status_code}")
-                
-                if response.status_code == 200:
-                    manga_detail = response.json()
-                    print(f"Successfully fetched: {manga_detail.get('title', 'Unknown')}")
-                    
-                    # Cache for 1 hour
-                    cache.set(cache_key, manga_detail, 60 * 60)
-                else:
-                    error_message = f"API returned status {response.status_code}"
-            except Exception as e:
-                error_message = f"Error: {str(e)}"
-                print(error_message)
-        
-        context = {
-            'series_id': series_id,
-            'manga': manga_detail,
-            'error_message': error_message
-        }
-        
-        if request.headers.get("HX-Request") == "true":
-            return render(request, "src/series_detail/series_detail_partial.html", context)
-        return render(request, "src/series_detail/series_detail.html", context)
-    
-    # Determine which template to use based on path
-    if path == '/about/':
-        template_name = 'about/about'
-    elif path == '/contact/':
-        template_name = 'contact/contact'
-    elif path == '/series/':
-        # Get search and page from URL
-        search_query = request.GET.get('search', '').strip()
-        page_number = request.GET.get('page', 1)
-        
-        # Fall back to session if no search query
-        if not search_query:
-            search_query = request.session.get('last_series_search', '')
-        
-        page_obj = None
-        
-        if search_query:
-            # Save to session for later
-            request.session['last_series_search'] = search_query
-            
-            # Create base cache key
-            search_hash = hashlib.md5(search_query.lower().encode()).hexdigest()
-            
-            # Try to get paginator metadata from cache
-            paginator_cache_key = f"manga_paginator_{search_hash}"
-            cached_paginator_data = cache.get(paginator_cache_key)
-            
-            if cached_paginator_data:
-                # We have cached paginator data
-                num_pages = cached_paginator_data['num_pages']
-                per_page = cached_paginator_data['per_page']
-                total_count = cached_paginator_data['total_count']
-                
-                # Try to get this specific page from cache
-                page_cache_key = f"manga_page_{search_hash}_{page_number}"
-                cached_page = cache.get(page_cache_key)
-                
-                if cached_page:
-                    # Create a mock page object with cached data
-                    class CachedPage:
-                        def __init__(self, object_list, number, num_pages, has_next, has_previous):
-                            self.object_list = object_list
-                            self.number = number
-                            self.has_next = lambda: has_next
-                            self.has_previous = lambda: has_previous
-                            self.next_page_number = lambda: number + 1 if has_next else None
-                            self.previous_page_number = lambda: number - 1 if has_previous else None
-                            
-                            class MockPaginator:
-                                def __init__(self, num_pages, per_page, count):
-                                    self.num_pages = num_pages
-                                    self.per_page = per_page
-                                    self.count = count
-                            
-                            self.paginator = MockPaginator(num_pages, per_page, total_count)
-                        
-                        def has_other_pages(self):
-                            return self.paginator.num_pages > 1
-                    
-                    page_obj = CachedPage(
-                        cached_page['results'],
-                        int(page_number),
-                        num_pages,
-                        cached_page['has_next'],
-                        cached_page['has_previous']
-                    )
-                    print(f"Loaded page {page_number} from cache")
-            
-            # If not in cache, fetch from API
-            if not page_obj:
-                try:
-                    print(f"Fetching from API for search: {search_query}")
-                    response = requests.post(
-                        'https://api.mangaupdates.com/v1/series/search',
-                        json={'search': search_query},
-                        headers={'Content-Type': 'application/json'}
-                    )
-                    if response.status_code == 200:
-                        data = response.json()
-                        full_results = data.get('results', [])
-                        
-                        # Filter to only include needed fields
-                        manga_results = [
-                            {
-                                'record': {
-                                    'series_id': result['record']['series_id'],
-                                    'title': result['record']['title'],
-                                    'description': result['record'].get('description', ''),
-                                    'image': result['record'].get('image', {})
-                                }
-                            }
-                            for result in full_results
-                        ]
-                        
-                        # Paginate results
-                        per_page = 20
-                        paginator = Paginator(manga_results, per_page)
-                        page_obj = paginator.get_page(page_number)
-                        
-                        # Cache paginator metadata
-                        paginator_data = {
-                            'num_pages': paginator.num_pages,
-                            'per_page': per_page,
-                            'total_count': paginator.count
-                        }
-                        cache.set(paginator_cache_key, paginator_data, 60 * 30)
-                        
-                        # Cache each page separately
-                        for page_num in paginator.page_range:
-                            page = paginator.get_page(page_num)
-                            page_data = {
-                                'results': list(page.object_list),
-                                'has_next': page.has_next(),
-                                'has_previous': page.has_previous()
-                            }
-                            page_cache_key = f"manga_page_{search_hash}_{page_num}"
-                            cache.set(page_cache_key, page_data, 60 * 30)
-                        
-                        print(f"Cached {paginator.num_pages} pages for search: {search_query}")
-                        
-                except Exception as e:
-                    print(f"API Error: {e}")
-        
-        context = {
-            'search_query': search_query,
-            'manga_results': page_obj.object_list if page_obj else [],
-            'page_obj': page_obj
-        }
-        template_name = 'series/series'
-    elif path == '/upload/':
-        template_name = 'upload/upload'
-    else:
-        template_name = 'home/home'
-    
-    # Check if it's an HTMX request
     if request.headers.get("HX-Request") == "true":
-        return render(request, f"src/{template_name}_partial.html", context)
+        return render(request, "src/home/home_partial.html", context)
     
-    return render(request, f"src/{template_name}.html", context)
+    return render(request, "src/home/home.html", context)
+
+
+def about(request):
+    """About page view"""
+    context = {}
+    
+    if request.headers.get("HX-Request") == "true":
+        return render(request, "src/about/about_partial.html", context)
+    
+    return render(request, "src/about/about.html", context)
+
+
+def contact(request):
+    """Contact page view"""
+    context = {}
+    
+    if request.headers.get("HX-Request") == "true":
+        return render(request, "src/contact/contact_partial.html", context)
+    
+    return render(request, "src/contact/contact.html", context)
+
+
+def upload(request):
+    """Upload page view"""
+    context = {}
+    
+    if request.headers.get("HX-Request") == "true":
+        return render(request, "src/upload/upload_partial.html", context)
+    
+    return render(request, "src/upload/upload.html", context)
+
+
+def paper(request):
+    """Paper page view"""
+    context = {}
+    
+    if request.headers.get("HX-Request") == "true":
+        return render(request, "src/paper/paper_partial.html", context)
+    
+    return render(request, "src/paper/paper.html", context)
+
+
+def series_list(request):
+    """Series listing page with search functionality"""
+    search_query = request.GET.get('search', '').strip()
+    page_number = request.GET.get('page', 1)
+    
+    # Fall back to session if no search query
+    if not search_query:
+        search_query = request.session.get('last_series_search', '')
+    
+    page_obj = None
+    
+    if search_query:
+        # Save to session for later
+        request.session['last_series_search'] = search_query
+        
+        # Create base cache key
+        search_hash = hashlib.md5(search_query.lower().encode()).hexdigest()
+        
+        # Try to get paginator metadata from cache
+        paginator_cache_key = f"manga_paginator_{search_hash}"
+        cached_paginator_data = cache.get(paginator_cache_key)
+        
+        if cached_paginator_data:
+            # We have cached paginator data
+            num_pages = cached_paginator_data['num_pages']
+            per_page = cached_paginator_data['per_page']
+            total_count = cached_paginator_data['total_count']
+            
+            # Try to get this specific page from cache
+            page_cache_key = f"manga_page_{search_hash}_{page_number}"
+            cached_page = cache.get(page_cache_key)
+            
+            if cached_page:
+                # Create a mock page object with cached data
+                page_obj = _create_cached_page(
+                    cached_page['results'],
+                    int(page_number),
+                    num_pages,
+                    per_page,
+                    total_count,
+                    cached_page['has_next'],
+                    cached_page['has_previous']
+                )
+                print(f"Loaded page {page_number} from cache")
+        
+        # If not in cache, fetch from API
+        if not page_obj:
+            page_obj = _fetch_and_cache_series_search(search_query, page_number, search_hash)
+    
+    context = {
+        'search_query': search_query,
+        'manga_results': page_obj.object_list if page_obj else [],
+        'page_obj': page_obj
+    }
+    
+    if request.headers.get("HX-Request") == "true":
+        return render(request, "src/series/series_partial.html", context)
+    
+    return render(request, "src/series/series.html", context)
+
+
+def series_detail(request, series_id):
+    """Series detail page"""
+    manga_detail = None
+    error_message = None
+
+    cache_key = f"manga_detail_{series_id}"
+    cached_detail = cache.get(cache_key)
+
+    if cached_detail:
+        print(f"Loading from cache for series {series_id}")
+        manga_detail = cached_detail
+    else:
+        print(f"Fetching from API for series {series_id}")
+        try:
+            response = requests.get(
+                f"https://api.mangaupdates.com/v1/series/{series_id}",
+                headers={"Content-Type": "application/json"},
+                timeout=10
+            )
+
+            if response.status_code == 200:
+                manga_detail = response.json()
+                print(f"API Response keys: {manga_detail.keys() if manga_detail else 'None'}")
+                print(f"Has description: {'description' in manga_detail if manga_detail else False}")
+                cache.set(cache_key, manga_detail, 60 * 60)
+            else:
+                error_message = f"API returned {response.status_code}"
+        except Exception as e:
+            error_message = str(e)
+
+    # ✅ CLEAN AUTHORS HERE
+    if manga_detail and "authors" in manga_detail:
+        seen = set()
+        manga_detail["authors_clean"] = []
+
+        for a in manga_detail["authors"]:
+            if a["type"] == "Author" and a["author_id"] not in seen:
+                seen.add(a["author_id"])
+                manga_detail["authors_clean"].append({
+                    "id": a["author_id"],
+                    "name": a["name"]
+                })
+
+    print(f"Final context - manga exists: {manga_detail is not None}, has description: {'description' in manga_detail if manga_detail else False}")
+    
+    context = {
+        "series_id": series_id,
+        "manga": manga_detail,
+        "error_message": error_message
+    }
+
+    if request.headers.get("HX-Request") == "true":
+        print(f"HTMX Request detected")
+        return render(request, "src/series_detail/series_detail_partial.html", context)
+
+    return render(request, "src/series_detail/series_detail.html", context)
+
+def author_detail(request, author_id):
+    cache_key = f"author_detail_{author_id}"
+    author = cache.get(cache_key)
+    error_message = None
+
+    if not author:
+        try:
+            response = requests.get(
+                f"https://api.mangaupdates.com/v1/authors/{author_id}",
+                timeout=10
+            )
+
+            print(f"Status code: {response.status_code}")
+            print(f"Response: {response.text}")
+
+            if response.status_code == 200:
+                author = response.json()
+                cache.set(cache_key, author, 60*60)
+            elif response.status_code == 404:
+                error_message = "Author not found"
+            else:
+                error_message = f"API returned {response.status_code}"
+        except Exception as e:
+            error_message = str(e)
+
+    context = {
+        "author": author,
+        "error_message": error_message
+    }
+    return render(request, "src/author/author.html", context)
+
+
+
+# Helper functions
+
+def _create_cached_page(object_list, number, num_pages, per_page, total_count, has_next, has_previous):
+    """Create a mock page object from cached data"""
+    class CachedPage:
+        def __init__(self, object_list, number, num_pages, has_next, has_previous):
+            self.object_list = object_list
+            self.number = number
+            self.has_next = lambda: has_next
+            self.has_previous = lambda: has_previous
+            self.next_page_number = lambda: number + 1 if has_next else None
+            self.previous_page_number = lambda: number - 1 if has_previous else None
+            
+            class MockPaginator:
+                def __init__(self, num_pages, per_page, count):
+                    self.num_pages = num_pages
+                    self.per_page = per_page
+                    self.count = count
+            
+            self.paginator = MockPaginator(num_pages, per_page, total_count)
+        
+        def has_other_pages(self):
+            return self.paginator.num_pages > 1
+    
+    return CachedPage(object_list, number, num_pages, has_next, has_previous)
+
+
+def _fetch_and_cache_series_search(search_query, page_number, search_hash):
+    """Fetch series search results from API and cache them"""
+    try:
+        print(f"Fetching from API for search: {search_query}")
+        response = requests.post(
+            'https://api.mangaupdates.com/v1/series/search',
+            json={'search': search_query},
+            headers={'Content-Type': 'application/json'}
+        )
+        
+        if response.status_code == 200:
+            data = response.json()
+            full_results = data.get('results', [])
+            
+            # Filter to only include needed fields
+            manga_results = [
+                {
+                    'record': {
+                        'series_id': result['record']['series_id'],
+                        'title': result['record']['title'],
+                        'description': result['record'].get('description', ''),
+                        'image': result['record'].get('image', {})
+                    }
+                }
+                for result in full_results
+            ]
+            
+            # Paginate results
+            per_page = 20
+            paginator = Paginator(manga_results, per_page)
+            page_obj = paginator.get_page(page_number)
+            
+            # Cache paginator metadata
+            paginator_data = {
+                'num_pages': paginator.num_pages,
+                'per_page': per_page,
+                'total_count': paginator.count
+            }
+            paginator_cache_key = f"manga_paginator_{search_hash}"
+            cache.set(paginator_cache_key, paginator_data, 60 * 30)
+            
+            # Cache each page separately
+            for page_num in paginator.page_range:
+                page = paginator.get_page(page_num)
+                page_data = {
+                    'results': list(page.object_list),
+                    'has_next': page.has_next(),
+                    'has_previous': page.has_previous()
+                }
+                page_cache_key = f"manga_page_{search_hash}_{page_num}"
+                cache.set(page_cache_key, page_data, 60 * 30)
+            
+            print(f"Cached {paginator.num_pages} pages for search: {search_query}")
+            return page_obj
+            
+    except Exception as e:
+        print(f"API Error: {e}")
+        return None
