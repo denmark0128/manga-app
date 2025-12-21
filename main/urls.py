@@ -10,4 +10,5 @@ urlpatterns = [
     path('series/', views.series_list, name='series_list'),
     path('series/<int:series_id>/', views.series_detail, name='series_detail'),
     path('author/<int:author_id>/', views.author_detail, name='author_detail'),
+    path('toggle-nsfw/', views.toggle_nsfw, name='toggle_nsfw'),
 ]

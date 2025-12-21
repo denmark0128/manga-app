@@ -24,22 +24,23 @@ hx-indicator="#loader">
     {% if manga_results %}
         <ul class="grid grid-cols-2 sm:grid-cols-1 gap-2">
         {% for manga in manga_results %}
-            <li x-data="{ showOverlay: false }">
-                <div class="p-2 bg-[#0d1117] border border-gray-800 flex flex-col sm:flex-row gap-4 relative h-full">
+            <li x-data="{ showOverlay: false, showGenres: false }">
 
+                <div class="p-2 bg-[#0d1117] border border-gray-800 flex flex-col sm:flex-row gap-4 relative h-full">
                     <div class="overflow-hidden flex-shrink-0 mx-auto sm:mx-0 relative">
+                        
                         {% if manga.record.image.url.thumb %}
                             <!-- IMAGE -->
                             <img 
                                 src="{{ manga.record.image.url.thumb }}" 
                                 alt="{{ manga.record.title }}"
                                 loading="lazy"
-                                class="w-full sm:w-32 h-48 sm:h-auto object-cover hover:scale-105 transition-transform rounded cursor-pointer"
+                                class="w-full sm:w-32 h-48 sm:h-auto object-cover hover:scale-105 transition-transform rounded cursor-pointer {% if manga.record.is_nsfw and not show_nsfw %}blur-lg{% endif %}"
                                 @click="showOverlay = true"
                             >
                         {% else %}
                             <!-- PLACEHOLDER for missing image -->
-                            <div class="w-full sm:w-32 h-48 sm:h-auto bg-gray-800 flex items-center justify-center rounded cursor-pointer"
+                            <div class="w-full sm:w-32 h-48 sm:h-auto bg-gray-800 flex items-center justify-center rounded cursor-pointer {% if manga.record.is_nsfw and not show_nsfw %}blur-2xl{% endif %}"
                                  @click="showOverlay = true">
                                 <svg class="w-12 h-12 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
@@ -54,23 +55,65 @@ hx-indicator="#loader">
                             x-transition
                             @click.away="showOverlay = false"
                         >
-                            <h3 class="text-sm font-semibold mb-3 break-words line-clamp-3">
-                                {{ manga.record.title }}
-                            </h3>
+                                <h3 class="text-sm font-semibold mb-3 break-words line-clamp-3">
+                                    {{ manga.record.title }}
+                                </h3>
 
-                            <button 
-                                class="bg-blue-600 px-3 py-2 rounded text-white text-sm"
-                                hx-get="/series/{{ manga.record.series_id }}/"
-                                hx-target="#content"
-                                hx-push-url="true"
-                            >
-                                View Series
-                            </button>
+                                {% if manga.record.genres %}
+                                <button
+                                    @click.stop="showGenres = true"
+                                    class="text-xs underline text-gray-300 mb-3"
+                                >
+                                    View genres
+                                </button>
+                                {% endif %}
+
+                                <button 
+                                    class="mt-6 bg-blue-900 px-3 py-2 rounded text-white text-sm"
+                                    hx-get="/series/{{ manga.record.series_id }}/"
+                                    hx-target="#content"
+                                    hx-push-url="true"
+                                >
+                                    Visit →
+                                </button>
+                                <div
+                                x-show="showGenres"
+                                x-transition
+                                class="fixed inset-0 z-50 flex items-center justify-center"
+                                >
+                                <!-- Modal box -->
+                                <div
+                                    class="bg-gray-900 rounded-lg p-4 max-w-sm w-full mx-4 relative"
+                                    @click.away="showGenres = false"
+                                >
+                                    <!-- Close button -->
+                                    <button
+                                        class="absolute top-2 right-2 text-gray-400 hover:text-white"
+                                        @click="showGenres = false"
+                                    >
+                                        ✕
+                                    </button>
+
+                                    <h3 class="text-sm font-semibold mb-3">
+                                        Genres
+                                    </h3>
+
+                                    <div class="flex flex-wrap gap-2">
+                                        {% for g in manga.record.genres %}
+                                            <span class="bg-gray-700 px-2 py-1 rounded text-xs">
+                                                {{ g.genre }}
+                                            </span>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                            </div>
                         </div>
+                        
+
                     </div>
 
                     <!-- NORMAL DESKTOP TEXT -->
-                    <div class="p-2 flex-1 min-w-0 hidden sm:block">
+                    <div class="p-2 flex-1 space-y-2 min-w-0 hidden sm:block">
                         <a 
                             hx-get="/series/{{ manga.record.series_id }}/"
                             hx-target="#content"
@@ -84,8 +127,14 @@ hx-indicator="#loader">
                         <p class="text-sm text-gray-300 break-words">
                             {{ manga.record.description|truncatewords:20 }}
                         </p>
+                        <p>
+                            {% for g in manga.record.genres %}
+                                <span class="bg-gray-700 px-2 py-1 rounded text-sm mr-1">
+                                    {{ g.genre }}
+                                </span>
+                            {% endfor %}
+                        </p>
                     </div>
-
                 </div>
             </li>
         {% endfor %}

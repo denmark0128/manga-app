@@ -4,10 +4,18 @@ from django.core.paginator import Paginator
 import requests
 import hashlib
 
+NSFW_KEYWORDS = {"hentai", "ecchi", "adult", "pornographic", "erotica","smut"}
+
+def is_nsfw(genres):
+    return any(
+        g.get("genre", "").lower() in NSFW_KEYWORDS
+        for g in genres
+    )
 
 def home(request):
     """Home page view"""
-    context = {}
+    show_nsfw = request.session.get('show_nsfw', False)
+    context = {'show_nsfw': show_nsfw}
     
     if request.headers.get("HX-Request") == "true":
         return render(request, "src/home/home_partial.html", context)
@@ -104,16 +112,22 @@ def series_list(request):
         if not page_obj:
             page_obj = _fetch_and_cache_series_search(search_query, page_number, search_hash)
     
+    # Get NSFW setting from session (default to False)
+    show_nsfw = request.session.get('show_nsfw', False)
+    
     context = {
         'search_query': search_query,
         'manga_results': page_obj.object_list if page_obj else [],
-        'page_obj': page_obj
+        'page_obj': page_obj,
+        'show_nsfw': show_nsfw
     }
     
     if request.headers.get("HX-Request") == "true":
         return render(request, "src/series/series_partial.html", context)
     
     return render(request, "src/series/series.html", context)
+
+
 
 
 def series_detail(request, series_id):
@@ -161,10 +175,14 @@ def series_detail(request, series_id):
 
     print(f"Final context - manga exists: {manga_detail is not None}, has description: {'description' in manga_detail if manga_detail else False}")
     
+    # Get NSFW setting from session (default to False)
+    show_nsfw = request.session.get('show_nsfw', False)
+    
     context = {
         "series_id": series_id,
         "manga": manga_detail,
-        "error_message": error_message
+        "error_message": error_message,
+        "show_nsfw": show_nsfw
     }
 
     if request.headers.get("HX-Request") == "true":
@@ -173,11 +191,63 @@ def series_detail(request, series_id):
 
     return render(request, "src/series_detail/series_detail.html", context)
 
+def toggle_nsfw(request):
+    """Toggle NSFW content visibility"""
+    show_nsfw = request.session.get('show_nsfw', False)
+    request.session['show_nsfw'] = not show_nsfw
+    
+    # If it's an HTMX request, return the series partial to refresh the results
+    if request.headers.get("HX-Request") == "true":
+        # Get current search params
+        search_query = request.GET.get('search', '').strip() or request.session.get('last_series_search', '')
+        page_number = request.GET.get('page', 1)
+        
+        # Reuse the same logic from series_list
+        page_obj = None
+        if search_query:
+            search_hash = hashlib.md5(search_query.lower().encode()).hexdigest()
+            paginator_cache_key = f"manga_paginator_{search_hash}"
+            cached_paginator_data = cache.get(paginator_cache_key)
+            
+            if cached_paginator_data:
+                page_cache_key = f"manga_page_{search_hash}_{page_number}"
+                cached_page = cache.get(page_cache_key)
+                
+                if cached_page:
+                    page_obj = _create_cached_page(
+                        cached_page['results'],
+                        int(page_number),
+                        cached_paginator_data['num_pages'],
+                        cached_paginator_data['per_page'],
+                        cached_paginator_data['total_count'],
+                        cached_page['has_next'],
+                        cached_page['has_previous']
+                    )
+            
+            if not page_obj:
+                page_obj = _fetch_and_cache_series_search(search_query, page_number, search_hash)
+        
+        context = {
+            'search_query': search_query,
+            'manga_results': page_obj.object_list if page_obj else [],
+            'page_obj': page_obj,
+            'show_nsfw': not show_nsfw
+        }
+        
+        return render(request, "src/series/series_partial.html", context)
+    
+    # Fallback for non-HTMX requests
+    return render(request, "components/navbar.html", {'show_nsfw': not show_nsfw})
+
 def author_detail(request, author_id):
     cache_key = f"author_detail_{author_id}"
+    series_cache_key = f"author_series_{author_id}"
+    
     author = cache.get(cache_key)
+    author_series = cache.get(series_cache_key)
     error_message = None
 
+    # Fetch author details
     if not author:
         try:
             response = requests.get(
@@ -185,8 +255,7 @@ def author_detail(request, author_id):
                 timeout=10
             )
 
-            print(f"Status code: {response.status_code}")
-            print(f"Response: {response.text}")
+            print(f"Author API Status code: {response.status_code}")
 
             if response.status_code == 200:
                 author = response.json()
@@ -197,11 +266,43 @@ def author_detail(request, author_id):
                 error_message = f"API returned {response.status_code}"
         except Exception as e:
             error_message = str(e)
+            print(f"Author API Error: {e}")
+    
+    if author and not author_series:
+        try:
+            print(f"Fetching series for author {author_id}")
+            response = requests.post(
+                f"https://api.mangaupdates.com/v1/authors/{author_id}/series",
+                json={}, 
+                headers={'Content-Type': 'application/json'},
+                timeout=10
+            )
+
+            print(f"Series API Status code: {response.status_code}")
+
+            if response.status_code == 200:
+                author_series = response.json()
+                print(f"Found {author_series.get('total_series', 0)} series")
+                cache.set(series_cache_key, author_series, 60*60)
+            else:
+                print(f"Series API returned {response.status_code}")
+                print(f"Response: {response.text[:200]}")
+        except Exception as e:
+            print(f"Error fetching author series: {e}")
+            author_series = None
+
+    show_nsfw = request.session.get('show_nsfw', False)
 
     context = {
         "author": author,
-        "error_message": error_message
+        "author_series": author_series,
+        "error_message": error_message,
+        "show_nsfw": show_nsfw
     }
+    
+    if request.headers.get("HX-Request") == "true":
+        return render(request, "src/author/author_partial.html", context)
+    
     return render(request, "src/author/author.html", context)
 
 
@@ -248,18 +349,23 @@ def _fetch_and_cache_series_search(search_query, page_number, search_hash):
             full_results = data.get('results', [])
             
             # Filter to only include needed fields
+
+            
             manga_results = [
                 {
                     'record': {
-                        'series_id': result['record']['series_id'],
-                        'title': result['record']['title'],
-                        'description': result['record'].get('description', ''),
-                        'image': result['record'].get('image', {})
+                        'series_id': (result.get('record') or {}).get('series_id'),
+                        'title': (result.get('record') or {}).get('title'),
+                        'description': (result.get('record') or {}).get('description', ''),
+                        'image': (result.get('record') or {}).get('image', {}),
+                        'genres': (result.get('record') or {}).get('genres') or [],
+                        'is_nsfw': False if not (result.get('record') or {}).get('genres') else is_nsfw((result.get('record') or {}).get('genres')),
                     }
                 }
                 for result in full_results
+                if result.get('record')
             ]
-            
+      
             # Paginate results
             per_page = 20
             paginator = Paginator(manga_results, per_page)

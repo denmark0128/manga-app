@@ -1,9 +1,27 @@
-
-<nav class="bg-gray-950 p-4 space-x-4 ">
-    <a hx-get="/" hx-target="#content" hx-push-url="true" class="cursor-pointer">Home</a>
-    <a hx-get="/series/" hx-target="#content" hx-push-url="true" class="cursor-pointer">Series</a>
+<nav class="bg-gray-950 p-4 space-x-4 flex justify-between items-center" 
+     x-data="{ showNsfw: {{ show_nsfw|lower }} }">
+    <div class="space-x-4">
+        <a hx-get="/" hx-target="#content" hx-push-url="true" class="cursor-pointer">Home</a>
+        <a hx-get="/series/" hx-target="#content" hx-push-url="true" class="cursor-pointer">Series</a>
+    </div>
     
+    <!-- NSFW Toggle -->
+    <form hx-post="/toggle-nsfw/?search={{ search_query }}&page={{ page_obj.number|default:1 }}" 
+          hx-target="#content"
+          hx-swap="innerHTML"
+          @htmx:after-request="showNsfw = !showNsfw"
+          style="display: inline;">
+        {% csrf_token %}
+        <button 
+            type="submit"
+            class="px-3 py-1 rounded text-sm"
+            :class="showNsfw ? 'bg-red-900 hover:bg-red-700' : 'bg-gray-700 hover:bg-gray-600'"
+            x-text="showNsfw ? 'NSFW: ON' : 'NSFW: OFF'"
+        >
+        </button>
+    </form>
 </nav>
+
 <!-- Added links 
 <a hx-get="/about/" hx-target="#content" hx-push-url="true" class="cursor-pointer">About</a>
 <a hx-get="/contact/" hx-target="#content" hx-push-url="true" class="cursor-pointer">Contact</a>
