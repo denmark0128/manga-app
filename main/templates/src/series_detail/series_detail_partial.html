@@ -7,7 +7,7 @@
         </button>
         
         <!-- Mobile: Image + Basic Info Side by Side -->
-        <div class="grid grid-cols-2 gap-4 sm:hidden mb-4">
+        <div class="grid grid-cols-2 gap-4 sm:hidden mb-3 bg-[#0d1117] rounded-lg border border-gray-700 p-4">
             {% if manga.image.url.original %}
                 <img src="{{ manga.image.url.original }}" 
                      alt="{{ manga.title }}"
@@ -140,7 +140,7 @@
         </div>
         
         <!-- Mobile: Genres, Description, Related (Full Width Below) -->
-        <div class="sm:hidden">
+        <div class="sm:hidden bg-[#0d1117] rounded-lg border border-gray-700 p-4">
             {% if manga.genres %}
                 <div class="mb-4">
                     <span class="font-semibold text-sm">Genres: </span>
