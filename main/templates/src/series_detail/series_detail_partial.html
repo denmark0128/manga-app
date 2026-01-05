@@ -60,58 +60,64 @@
                 </div>
             {% endif %}
             
-            <div class="flex-1">
-                <h1 class="text-3xl font-bold mb-2 break-words">{{ manga.title }}</h1>
-                
-                {% if manga.type %}
-                    <p class="text-gray-400 mb-2 text-base">Type: {{ manga.type }}</p>
-                {% endif %}
-                
-                {% if manga.year %}
-                    <p class="text-gray-400 mb-2 text-base">Year: {{ manga.year }}</p>
-                {% endif %}
-                
-                {% if manga.bayesian_rating %}
-                    <p class="text-gray-400 mb-2 text-base">Rating: {{ manga.bayesian_rating }}</p>
-                {% endif %}
-                
-                {% if manga.authors_clean %}
-                    <p class="text-gray-400 mb-2 text-base">
-                        Author:
-                        {% for author in manga.authors_clean %}
-                            {% if author.id %}
-                                <a hx-get="{% url 'author_detail' author.id %}"
-                                   hx-target="#content"
-                                   hx-push-url="true"
-                                   class="cursor-pointer hover:underline text-blue-400 break-words">
-                                    {{ author.name }}
-                                </a>
-                            {% else %}
-                                <span class="text-gray-400">{{ author.name }}</span>
-                            {% endif %}
-                            {% if not forloop.last %}, {% endif %}
-                        {% endfor %}
-                    </p>
-                {% endif %}
-                
-                {% if manga.genres %}
-                    <div class="mb-4">
-                        <span class="font-semibold text-base">Genres: </span>
-                        <div class="flex flex-wrap gap-1 mt-1">
-                            {% for genre in manga.genres %}
-                                <span class="bg-gray-700 px-2 py-1 rounded text-sm">{{ genre.genre }}</span>
+            <div class="flex-1 space-y-2">
+            
+                <div class="p-4 bg-[#0d1117] rounded-lg border border-gray-700">
+                    <h1 class="text-3xl font-bold mb-2 break-words">{{ manga.title }}</h1>
+                    
+                    {% if manga.type %}
+                        <p class="text-gray-400 mb-2 text-base">Type: {{ manga.type }}</p>
+                    {% endif %}
+                    
+                    {% if manga.year %}
+                        <p class="text-gray-400 mb-2 text-base">Year: {{ manga.year }}</p>
+                    {% endif %}
+                    
+                    {% if manga.bayesian_rating %}
+                        <p class="text-gray-400 mb-2 text-base">Rating: {{ manga.bayesian_rating }}</p>
+                    {% endif %}
+                    
+                    {% if manga.authors_clean %}
+                        <p class="text-gray-400 mb-2 text-base">
+                            Author:
+                            {% for author in manga.authors_clean %}
+                                {% if author.id %}
+                                    <a hx-get="{% url 'author_detail' author.id %}"
+                                    hx-target="#content"
+                                    hx-push-url="true"
+                                    class="cursor-pointer hover:underline text-blue-400 break-words">
+                                        {{ author.name }}
+                                    </a>
+                                {% else %}
+                                    <span class="text-gray-400">{{ author.name }}</span>
+                                {% endif %}
+                                {% if not forloop.last %}, {% endif %}
                             {% endfor %}
+                        </p>
+                    {% endif %}
+
+                    {% if manga.genres %}
+                        <div>
+                            <div class="flex flex-wrap gap-1 mt-1">
+                                {% for genre in manga.genres %}
+                                    <span class="bg-gray-700 px-2 py-1 rounded text-sm">{{ genre.genre }}</span>
+                                {% endfor %}
+                            </div>
                         </div>
-                    </div>
+
                 {% endif %}
-                
+                </div>
+
                 {% if manga.description %}
-                    <div class="mt-4">
+                <div class="p-4 bg-[#0d1117] rounded-lg border border-gray-700">
+                    <div>
                         <h2 class="text-xl font-semibold mb-2">Description</h2>
                         <div class="text-gray-300 text-base prose prose-invert max-w-none [&_a]:text-blue-400 [&_a]:hover:underline whitespace-pre-wrap break-words">{{ manga.description }}</div>
                     </div>
+                </div>
                 {% endif %}
                 
+
                 {% if manga.related_series %}
                     <div class="mt-4">
                         <h2 class="text-xl font-semibold mb-2">Related Series</h2>

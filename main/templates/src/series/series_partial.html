@@ -26,7 +26,7 @@ hx-indicator="#loader">
         {% for manga in manga_results %}
             <li x-data="{ showOverlay: false, showGenres: false }">
 
-                <div class="p-2 bg-[#0d1117] border border-gray-800 flex flex-col sm:flex-row gap-4 relative h-full">
+                <div class="p-2 bg-[#0d1117] rounded-lg border border-gray-700 flex flex-col sm:flex-row gap-4 relative h-full">
                     <div class="overflow-hidden flex-shrink-0 mx-auto sm:mx-0 relative">
                         
                         {% if manga.record.image.url.thumb %}

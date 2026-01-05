@@ -2,63 +2,84 @@
     <button onclick="history.back()" 
             class="text-blue-400 hover:underline mb-4 inline-block">← Back
     </button>
-    <div class="flex flex-row space-x-6">
+    <div class="bg-[#0d1117] p-4 rounded-lg border border-gray-700">
+    <div class="flex flex-col md:flex-row md:space-x-6">
         
-        <div>
+        <div class="flex-shrink-0 mb-4 md:mb-0">
             {% if author.image.url.original %}
-                <img src="{{ author.image.url.original }}" alt="{{ author.name }}" class="rounded-lg">
+                <img src="{{ author.image.url.original }}" alt="{{ author.name }}" class="rounded-lg w-full md:w-auto max-w-xs">
             {% endif %}
         </div>
 
-        <div class="space-y-2">
-            <h1 class="text-2xl font-bold">{{ author.name }}</h1>
+       <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 flex-1 w-full">
+            <h1 class="col-span-1 sm:col-span-2 md:col-span-4 text-2xl font-bold break-words">
+                {{ author.name }}
+            </h1>
+
             {% if author.actualname %}
-            <p class="text-gray-400">Real Name: {{ author.actualname }}</p>
+                <p class="text-gray-400">Real Name: {{ author.actualname }}</p>
             {% endif %}
+
             {% if author.birthday.as_string %}
-                <p class="text-gray-400">Birthday: {{ author.birthday.as_string }}{% if author.birthday.zodiac %} ({{ author.birthday.zodiac }}){% endif %}</p>
+                <p class="text-gray-400">
+                    Birthday: {{ author.birthday.as_string }}
+                    {% if author.birthday.zodiac %} ({{ author.birthday.zodiac }}){% endif %}
+                </p>
             {% endif %}
 
-            {% if author.birthplace %}<p class="text-gray-400">Birthplace: {{ author.birthplace }}</p>{% endif %}
-            {% if author.bloodtype %}<p class="text-gray-400">Blood Type: {{ author.bloodtype }}</p>{% endif %}
-            {% if author.gender %}<p class="text-gray-400">Gender: {{ author.gender }}</p>{% endif %}
+            {% if author.birthplace %}
+                <p class="text-gray-400">Birthplace: {{ author.birthplace }}</p>
+            {% endif %}
 
+            {% if author.bloodtype %}
+                <p class="text-gray-400">Blood: {{ author.bloodtype }}</p>
+            {% endif %}
 
-            {% if author.status %}<p class="text-gray-400">Status: {{ author.status }}</p>{% endif %}
+            {% if author.gender %}
+                <p class="text-gray-400">Gender: {{ author.gender }}</p>
+            {% endif %}
 
+            {% if author.status %}
+                <p class="text-gray-400">Status: {{ author.status }}</p>
+            {% endif %}
 
             {% if author.genres %}
-                <p class="text-gray-400">Genres: {{ author.genres|join:", " }}</p>
+                <p class="col-span-1 sm:col-span-2 md:col-span-2 text-gray-400 text-sm">
+                    Genres: {{ author.genres|join:", " }}
+                </p>
             {% endif %}
         </div>
     </div>
 
-    <div class="mt-2">
-        {% if author.associated %}
-            <p class="text-gray-400">Associated: 
-                {% for a in author.associated %}
-                    {{ a.name }}{% if not forloop.last %}, {% endif %}
-                {% endfor %}
-            </p>
-        {% endif %}
+    <div class="">
+        <div class="mt-2">
+            {% if author.associated %}
+                <p class="text-gray-400">Associated: 
+                    {% for a in author.associated %}
+                        {{ a.name }}{% if not forloop.last %}, {% endif %}
+                    {% endfor %}
+                </p>
+            {% endif %}
 
+            {% if author.stats.total_series %}
+                        <p class="text-gray-400">Total Series: {{ author.stats.total_series }}</p>
+            {% endif %}
+            
+        </div>
 
-        {% if author.stats.total_series %}
-            <p class="text-gray-400">Total Series: {{ author.stats.total_series }}</p>
-        {% endif %}
+        <div class="social mt-2 mb-4">
+            {% if author.social.officialsite %}
+                <a href="{{ author.social.officialsite }}" target="_blank" class="text-blue-400 underline">Official Site</a>
+            {% endif %}
+            {% if author.social.facebook %}
+                <a href="{{ author.social.facebook }}" target="_blank" class="ml-2 text-blue-400 underline">Facebook</a>
+            {% endif %}
+            {% if author.social.twitter %}
+                <a href="{{ author.social.twitter }}" target="_blank" class="ml-2 text-blue-400 underline">Twitter</a>
+            {% endif %}
+        </div>
     </div>
-
-    <div class="social mt-2 mb-4">
-        {% if author.social.officialsite %}
-            <a href="{{ author.social.officialsite }}" target="_blank" class="text-blue-400 underline">Official Site</a>
-        {% endif %}
-        {% if author.social.facebook %}
-            <a href="{{ author.social.facebook }}" target="_blank" class="ml-2 text-blue-400 underline">Facebook</a>
-        {% endif %}
-        {% if author.social.twitter %}
-            <a href="{{ author.social.twitter }}" target="_blank" class="ml-2 text-blue-400 underline">Twitter</a>
-        {% endif %}
-    </div>
+</div>
 
     <!-- Series by this author with Alpine search and genre filter -->
     {% if author_series and author_series.series_list %}
@@ -98,24 +119,24 @@
                 <span class="text-gray-400 text-base">({{ author_series.total_series }})</span>
             </h2>
             
-            <div class=" bg-gray-800 py-3 z-10 -mx-4 px-4 border-b border-gray-700">
+            <div class="bg-gray-800 py-3 z-10 border-b border-gray-700 -mx-4 px-4 sm:mx-0 sm:px-0">
                 <!-- Search input -->
                 <input 
                     type="text" 
                     x-model="searchQuery"
                     placeholder="Search series..."
-                    class="w-full p-2 rounded bg-gray-700 border border-gray-800 focus:ring focus:ring-blue-600 text-white"
+                    class="w-full p-2 rounded bg-gray-700 border border-gray-800 focus:ring focus:ring-blue-600 text-white text-sm"
                 >
             </div>
             
             <!-- Genre badges (clickable filters) -->
             {% if author_series.genre_list %}
                 <div class="mb-4 mt-4">
-                    <div class="flex items-center justify-between">
-                        <span class="font-semibold text-sm mb-1">Filter by Genre (click: include, double-click: exclude):</span>
+                    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                        <span class="font-semibold text-xs sm:text-sm">Filter by Genre:</span>
                         <button 
                             @click="clearFilters()"
-                            class="text-xs text-blue-400 hover:underline"
+                            class="text-xs text-blue-400 hover:underline whitespace-nowrap"
                         >
                             Clear Filters
                         </button>
@@ -145,7 +166,7 @@
             <ul class="space-y-3 min-h-[400px]">
                 {% for series in author_series.series_list %}
                     <li 
-                        class="p-3 bg-[#0d1117] border border-gray-800 rounded transition-colors"
+                        class="p-3 bg-[#0d1117] rounded-lg border border-gray-700 rounded transition-colors"
                         x-data="{
                             seriesGenres: [{% for g in series.genres %}'{{ g|lower }}'{% if not forloop.last %},{% endif %}{% endfor %}],
                             matchesFilter() {
