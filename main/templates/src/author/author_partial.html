@@ -1,234 +1,86 @@
-<div class="author-page p-4">
-    <button onclick="history.back()" 
-            class="text-blue-400 hover:underline mb-4 inline-block">← Back
-    </button>
-    <div class="bg-[#0d1117] p-4 rounded-lg border border-gray-700">
-    <div class="flex flex-col md:flex-row md:space-x-6">
-        
-        <div class="flex-shrink-0 mb-4 md:mb-0">
-            {% if author.image.url.original %}
-                <img src="{{ author.image.url.original }}" alt="{{ author.name }}" class="rounded-lg w-full md:w-auto max-w-xs">
-            {% endif %}
-        </div>
 
-       <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 flex-1 w-full">
-            <h1 class="col-span-1 sm:col-span-2 md:col-span-4 text-2xl font-bold break-words">
-                {{ author.name }}
-            </h1>
+<h1 class="text-2xl mb-12">Search Authors</h1>
 
-            {% if author.actualname %}
-                <p class="text-gray-400">Real Name: {{ author.actualname }}</p>
-            {% endif %}
+<div class="flex flex-col sm:flex-row gap-3 items-center sm:items-stretch">
+<form hx-get="/author/" 
+hx-target="#author-results" 
+hx-select="#author-results" 
+hx-trigger="submit"
+hx-indicator="#loader"
+class="flex gap-2 w-full flex-1">
+    <input type="text" 
+           id="search" 
+           name="search" 
+           placeholder="Search authors..." 
+           value="{{ search_query }}"
+           required
+           class="flex-1 px-3 py-2 rounded bg-gray-700 border border-gray-600 hover:border-gray-500 focus:border-blue-600 focus:ring focus:ring-blue-600/50 text-white placeholder-gray-400 transition-colors">
 
-            {% if author.birthday.as_string %}
-                <p class="text-gray-400">
-                    Birthday: {{ author.birthday.as_string }}
-                    {% if author.birthday.zodiac %} ({{ author.birthday.zodiac }}){% endif %}
-                </p>
-            {% endif %}
-
-            {% if author.birthplace %}
-                <p class="text-gray-400">Birthplace: {{ author.birthplace }}</p>
-            {% endif %}
-
-            {% if author.bloodtype %}
-                <p class="text-gray-400">Blood: {{ author.bloodtype }}</p>
-            {% endif %}
-
-            {% if author.gender %}
-                <p class="text-gray-400">Gender: {{ author.gender }}</p>
-            {% endif %}
-
-            {% if author.status %}
-                <p class="text-gray-400">Status: {{ author.status }}</p>
-            {% endif %}
-
-            {% if author.genres %}
-                <p class="col-span-1 sm:col-span-2 md:col-span-2 text-gray-400 text-sm">
-                    Genres: {{ author.genres|join:", " }}
-                </p>
-            {% endif %}
-        </div>
-    </div>
-
-    <div class="">
-        <div class="mt-2">
-            {% if author.associated %}
-                <p class="text-gray-400">Associated: 
-                    {% for a in author.associated %}
-                        {{ a.name }}{% if not forloop.last %}, {% endif %}
-                    {% endfor %}
-                </p>
-            {% endif %}
-
-            {% if author.stats.total_series %}
-                        <p class="text-gray-400">Total Series: {{ author.stats.total_series }}</p>
-            {% endif %}
-            
-        </div>
-
-        <div class="social mt-2 mb-4">
-            {% if author.social.officialsite %}
-                <a href="{{ author.social.officialsite }}" target="_blank" class="text-blue-400 underline">Official Site</a>
-            {% endif %}
-            {% if author.social.facebook %}
-                <a href="{{ author.social.facebook }}" target="_blank" class="text-blue-400 underline">Facebook</a>
-            {% endif %}
-            {% if author.social.twitter %}
-                <a href="{{ author.social.twitter }}" target="_blank" class="text-blue-400 underline">Twitter</a>
-            {% endif %}
-        </div>
-    </div>
+    <button type="submit" class="px-4 py-2 bg-blue-800 hover:bg-blue-700 rounded font-medium transition-colors">Search</button>
+</form>
+<span id="loader" class="loading htmx-indicator"></span>
 </div>
 
-    <!-- Series by this author with Alpine search and genre filter -->
-    {% if author_series and author_series.series_list %}
-        <div class="mt-6" x-data="{ 
-            searchQuery: '', 
-            includedGenres: [],
-            excludedGenres: [],
-            toggleGenre(genre) {
-                // Single click: include genre
-                if (this.excludedGenres.includes(genre)) {
-                    // If excluded, remove from excluded
-                    this.excludedGenres = this.excludedGenres.filter(g => g !== genre);
-                } else if (this.includedGenres.includes(genre)) {
-                    // If included, remove from included
-                    this.includedGenres = this.includedGenres.filter(g => g !== genre);
-                } else {
-                    // Not in any list, add to included
-                    this.includedGenres.push(genre);
-                }
-            },
-            excludeGenre(genre) {
-                // Double click: exclude genre
-                this.includedGenres = this.includedGenres.filter(g => g !== genre);
-                if (this.excludedGenres.includes(genre)) {
-                    this.excludedGenres = this.excludedGenres.filter(g => g !== genre);
-                } else {
-                    this.excludedGenres.push(genre);
-                }
-            },
-            clearFilters() {
-                this.includedGenres = [];
-                this.excludedGenres = [];
-            }
-        }">
-            <h2 class="text-xl sm:text-2xl font-semibold mb-4">
-                Series by {{ author.name }} 
-                <span class="text-gray-400 text-base">({{ author_series.total_series }})</span>
-            </h2>
-            
-            <div class="bg-gray-800 py-3 z-10 border-b border-gray-700 -mx-4 px-4 sm:mx-0 sm:px-0">
-                <!-- Search input -->
-                <input 
-                    type="text" 
-                    x-model="searchQuery"
-                    placeholder="Search series..."
-                    class="w-full p-2 rounded bg-gray-700 border border-gray-800 focus:ring focus:ring-blue-600 text-white text-sm"
-                >
-            </div>
-            
-            <!-- Genre badges (clickable filters) -->
-            {% if author_series.genre_list %}
-                <div class="mb-4 mt-4">
-                    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-                        <span class="font-semibold text-xs sm:text-sm">Filter by Genre:</span>
-                        <button 
-                            @click="clearFilters()"
-                            class="text-xs text-blue-400 hover:underline whitespace-nowrap"
+<div id="author-results" class="mt-4">
+    {% if author_results %}
+        <ul class="grid grid-cols-2 gap-2">
+        {% for author in author_results %}
+            <li>
+
+                <div class="p-2 bg-[#0d1117] rounded-lg border border-gray-700 flex flex-row gap-4 relative h-full">
+
+                    <!-- NORMAL DESKTOP TEXT -->
+                    <div class="p-2 flex-1 space-y-2 min-w-0">
+                        <a 
+                            hx-get="/author/{{ author.record.author_id }}/"
+                            hx-target="#content"
+                            hx-push-url="true"
+                            class="underline cursor-pointer block"
                         >
-                            Clear Filters
-                        </button>
-                    </div>
-                    <div class="flex flex-wrap gap-2">
-                        {% for genre_stat in author_series.genre_list %}
-                            <button 
-                                @click="toggleGenre('{{ genre_stat.genre|lower }}')"
-                                @dblclick.prevent="excludeGenre('{{ genre_stat.genre|lower }}')"
-                                :class="{
-                                    'bg-green-600': includedGenres.includes('{{ genre_stat.genre|lower }}'),
-                                    'bg-red-600': excludedGenres.includes('{{ genre_stat.genre|lower }}'),
-                                    'bg-gray-700': !includedGenres.includes('{{ genre_stat.genre|lower }}') && !excludedGenres.includes('{{ genre_stat.genre|lower }}')
-                                }"
-                                class="px-2 py-1 rounded text-xs sm:text-sm hover:opacity-80 transition-all select-none"
-                            >
-                                <span x-show="includedGenres.includes('{{ genre_stat.genre|lower }}')"></span>
-                                <span x-show="excludedGenres.includes('{{ genre_stat.genre|lower }}')"></span>
-                                {{ genre_stat.genre }} ({{ genre_stat.count }})
-                            </button>
-                        {% endfor %}
+                            <h3 class="font-semibold text-lg break-words">
+                                {{ author.record.name }}
+                            </h3>
+                        </a>
+                        <p class="text-sm text-gray-300 break-words">
+                            {{ author.record.description|truncatewords:20 }}
+                        </p>
+                        <p>{{ author.record.stats.total_series}}</p>
                     </div>
                 </div>
-            {% endif %}
-            
-            <!-- Series list with min-height to prevent layout shift -->
-            <ul class="space-y-3 min-h-[400px]">
-                {% for series in author_series.series_list %}
-                    <li 
-                        class="p-3 bg-[#0d1117] rounded-lg border border-gray-700 rounded transition-colors"
-                        x-data="{
-                            seriesGenres: [{% for g in series.genres %}'{{ g|lower }}'{% if not forloop.last %},{% endif %}{% endfor %}],
-                            matchesFilter() {
-                                // Check search query
-                                if (searchQuery !== '' && !'{{ series.title|lower }}'.includes(searchQuery.toLowerCase())) {
-                                    return false;
-                                }
-                                
-                                // Check excluded genres
-                                for (let excluded of excludedGenres) {
-                                    if (this.seriesGenres.includes(excluded)) {
-                                        return false;
-                                    }
-                                }
-                                
-                                // Check included genres (if any are selected, series must have at least one)
-                                if (includedGenres.length > 0) {
-                                    let hasIncluded = false;
-                                    for (let included of includedGenres) {
-                                        if (this.seriesGenres.includes(included)) {
-                                            hasIncluded = true;
-                                            break;
-                                        }
-                                    }
-                                    return hasIncluded;
-                                }
-                                
-                                return true;
-                            }
-                        }"
-                        x-show="matchesFilter()"
-                    >
-                        <a hx-get="/series/{{ series.series_id }}/"
-                           hx-target="#content"
-                           hx-push-url="true"
-                           class="block cursor-pointer">
-                            <h3 class="font-semibold text-base sm:text-lg text-blue-400 hover:underline break-words">
-                                {{ series.title }}
-                            </h3>
-                            
-                            <div class="flex flex-wrap gap-2 mt-2 text-xs sm:text-sm text-gray-400">
-                                {% if series.year %}
-                                    <span>{{ series.year }}</span>
-                                {% endif %}
-                            </div>
-                            
-                            {% if series.genres %}
-                                <div class="flex flex-wrap gap-1 mt-2">
-                                    {% for genre in series.genres %}
-                                        <span class="bg-gray-700 px-2 py-1 rounded text-xs">
-                                            {{ genre }}
-                                        </span>
-                                    {% endfor %}
-                                </div>
-                            {% endif %}
-                        </a>
-                    </li>
-                {% endfor %}
-            </ul>
-        </div>
-    {% else %}
-        <p class="text-gray-400 text-sm sm:text-base mt-6">No series found for this author.</p>
-    {% endif %}
+            </li>
+        {% endfor %}
+        </ul>
 
+        <!-- PAGINATION -->
+        {% if page_obj.has_other_pages %}
+        <div class="flex justify-center items-center gap-2 mt-6">
+            {% if page_obj.has_previous %}
+                <button 
+                    hx-get="/author/?search={{ search_query }}&page={{ page_obj.previous_page_number }}"
+                    hx-target="#author-results"
+                    hx-select="#author-results"
+                    class="px-4 py-2 bg-gray-700 rounded hover:bg-gray-600">
+                    Previous
+                </button>
+            {% endif %}
+
+            <span class="px-4 py-2 bg-gray-800 rounded">
+                Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+            </span>
+
+            {% if page_obj.has_next %}
+                <button 
+                    hx-get="/author/?search={{ search_query }}&page={{ page_obj.next_page_number }}"
+                    hx-target="#author-results"
+                    hx-select="#author-results"
+                    class="px-4 py-2 bg-gray-700 rounded hover:bg-gray-600">
+                    Next
+                </button>
+            {% endif %}
+        </div>
+        {% endif %}
+
+    {% elif search_query %}
+        <p>No results found for "{{ search_query }}"</p>
+    {% endif %} 
 </div>

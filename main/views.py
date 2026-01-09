@@ -62,6 +62,70 @@ def paper(request):
     
     return render(request, "src/paper/paper.html", context)
 
+def author_list(request):
+    """Author listing page with search functionality"""
+    search_query = request.GET.get('search', '').strip()
+    page_number = request.GET.get('page', 1)
+    
+    # Fall back to session if no search query
+    if not search_query:
+        search_query = request.session.get('last_author_search', '')
+    
+    page_obj = None
+    
+    if search_query:
+        # Save to session for later
+        request.session['last_author_search'] = search_query
+        
+        # Create base cache key
+        search_hash = hashlib.md5(search_query.lower().encode()).hexdigest()
+        
+        # Try to get paginator metadata from cache
+        paginator_cache_key = f"author_paginator_{search_hash}"
+        cached_paginator_data = cache.get(paginator_cache_key)
+        
+        if cached_paginator_data:
+            # We have cached paginator data
+            num_pages = cached_paginator_data['num_pages']
+            per_page = cached_paginator_data['per_page']
+            total_count = cached_paginator_data['total_count']
+            
+            # Try to get this specific page from cache
+            page_cache_key = f"author_page_{search_hash}_{page_number}"
+            cached_page = cache.get(page_cache_key)
+            
+            if cached_page:
+                # Create a mock page object with cached data
+                page_obj = _create_cached_page(
+                    cached_page['results'],
+                    int(page_number),
+                    num_pages,
+                    per_page,
+                    total_count,
+                    cached_page['has_next'],
+                    cached_page['has_previous']
+                )
+                print(f"Loaded page {page_number} from cache")
+        
+        # If not in cache, fetch from API
+        if not page_obj:
+            page_obj = _fetch_and_cache_author_search(search_query, page_number, search_hash)
+    
+    # Get NSFW setting from session (default to False)
+    show_nsfw = request.session.get('show_nsfw', False)
+    
+    context = {
+        'search_query': search_query,
+        'author_results': page_obj.object_list if page_obj else [],
+        'page_obj': page_obj,
+        'show_nsfw': show_nsfw
+    }
+    
+    if request.headers.get("HX-Request") == "true":
+        return render(request, "src/author/author_partial.html", context)
+    
+    return render(request, "src/author/author.html", context)
+
 
 def series_list(request):
     """Series listing page with search functionality"""
@@ -298,12 +362,12 @@ def author_detail(request, author_id):
         "author_series": author_series,
         "error_message": error_message,
         "show_nsfw": show_nsfw
-    }
+    }   
     
     if request.headers.get("HX-Request") == "true":
-        return render(request, "src/author/author_partial.html", context)
-    
-    return render(request, "src/author/author.html", context)
+        return render(request, "src/author_detail/author_detail_partial.html", context)
+
+    return render(request, "src/author_detail/author_detail.html", context)
 
 
 
@@ -396,4 +460,63 @@ def _fetch_and_cache_series_search(search_query, page_number, search_hash):
             
     except Exception as e:
         print(f"API Error: {e}")
+        return None
+
+
+def _fetch_and_cache_author_search(search_query, page_number, search_hash):
+    """Fetch author search results from API and cache them"""
+    try:
+        print(f"Fetching from API for author search: {search_query}")
+        response = requests.post(
+            'https://api.mangaupdates.com/v1/authors/search',
+            json={'search': search_query},
+            headers={'Content-Type': 'application/json'}
+        )
+        
+        if response.status_code == 200:
+            data = response.json()
+            full_results = data.get('results', [])
+            
+            # Filter to only include needed fields
+            author_results = [
+                {
+                    'record': {
+                        'author_id': (result.get('record') or {}).get('id'),
+                        'name': (result.get('record') or {}).get('name'),
+                    }
+                }
+                for result in full_results
+                if result.get('record')
+            ]
+      
+            # Paginate results
+            per_page = 20
+            paginator = Paginator(author_results, per_page)
+            page_obj = paginator.get_page(page_number)
+            
+            # Cache paginator metadata
+            paginator_data = {
+                'num_pages': paginator.num_pages,
+                'per_page': per_page,
+                'total_count': paginator.count
+            }
+            paginator_cache_key = f"author_paginator_{search_hash}"
+            cache.set(paginator_cache_key, paginator_data, 60 * 30)
+            
+            # Cache each page separately
+            for page_num in paginator.page_range:
+                page = paginator.get_page(page_num)
+                page_data = {
+                    'results': list(page.object_list),
+                    'has_next': page.has_next(),
+                    'has_previous': page.has_previous()
+                }
+                page_cache_key = f"author_page_{search_hash}_{page_num}"
+                cache.set(page_cache_key, page_data, 60 * 30)
+            
+            print(f"Cached {paginator.num_pages} pages for author search: {search_query}")
+            return page_obj
+            
+    except Exception as e:
+        print(f"Author API Error: {e}")
         return None

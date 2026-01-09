@@ -1,21 +1,22 @@
 
-<h1>Search Manga</h1>
+<h1 class="text-2xl mb-12">Search Manga</h1>
 
-<div class="flex gap-4">
+<div class="flex flex-col sm:flex-row gap-3 items-center sm:items-stretch">
 <form hx-get="/series/" 
 hx-target="#manga-results" 
 hx-select="#manga-results" 
 hx-trigger="submit"
-hx-indicator="#loader">
+hx-indicator="#loader"
+class="flex gap-2 w-full sm:w-auto flex-1">
     <input type="text" 
            id="search" 
            name="search" 
            placeholder="Search manga..." 
            value="{{ search_query }}"
            required
-           class="p-2 rounded bg-gray-700 border border-gray-800 focus:ring focus:ring-blue-600 text-white">
+           class="flex-1 px-3 py-2 rounded bg-gray-700 border border-gray-600 hover:border-gray-500 focus:border-blue-600 focus:ring focus:ring-blue-600/50 text-white placeholder-gray-400 transition-colors">
 
-    <button type="submit" class="ml-2 p-2 bg-blue-800 rounded hover:bg-blue-700">Search</button>
+    <button type="submit" class="px-4 py-2 bg-blue-800 hover:bg-blue-700 rounded font-medium transition-colors">Search</button>
 </form>
 <span id="loader" class="loading htmx-indicator"></span>
 </div>

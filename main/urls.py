@@ -7,6 +7,7 @@ urlpatterns = [
     path('contact/', views.contact, name='contact'),
     path('upload/', views.upload, name='upload'),
     path('paper/', views.paper, name='paper'),
+    path('author/', views.author_list, name='author_list'),
     path('series/', views.series_list, name='series_list'),
     path('series/<int:series_id>/', views.series_detail, name='series_detail'),
     path('author/<int:author_id>/', views.author_detail, name='author_detail'),
