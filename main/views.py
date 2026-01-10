@@ -3,8 +3,17 @@ from django.core.cache import cache
 from django.core.paginator import Paginator
 import requests
 import hashlib
+import re
 
 NSFW_KEYWORDS = {"hentai", "ecchi", "adult", "pornographic", "erotica","smut"}
+
+def parse_markdown_links(text):
+    """Convert markdown links to HTML links"""
+    # Convert [text](url) to <a href="url">text</a>
+    pattern = r'\[([^\]]+)\]\(([^\)]+)\)'
+    replacement = r'<a href="\2" target="_blank" rel="noopener noreferrer">\1</a>'
+    return re.sub(pattern, replacement, text)
+
 
 def is_nsfw(genres):
     return any(
@@ -216,6 +225,8 @@ def series_detail(request, series_id):
 
             if response.status_code == 200:
                 manga_detail = response.json()
+                if manga_detail.get("description"):
+                    manga_detail["description"] = parse_markdown_links(manga_detail["description"])
                 print(f"API Response keys: {manga_detail.keys() if manga_detail else 'None'}")
                 print(f"Has description: {'description' in manga_detail if manga_detail else False}")
                 cache.set(cache_key, manga_detail, 60 * 60)

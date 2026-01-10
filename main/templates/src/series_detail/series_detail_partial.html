@@ -28,6 +28,7 @@
                 {% if manga.bayesian_rating %}
                     <p class="text-gray-400 mb-1 text-sm">Rating: {{ manga.bayesian_rating }}</p>
                 {% endif %}
+
                 
                 {% if manga.authors_clean %}
                     <p class="text-gray-400 mb-1 text-sm">
@@ -104,15 +105,34 @@
                                 {% endfor %}
                             </div>
                         </div>
+                    {% endif %}
 
-                {% endif %}
+                    {% if manga.categories %}
+                        <div class="mt-2" x-data="{ showCategories: false }">
+                            <div class="flex items-center gap-2 mb-1">
+                                <p class="text-base">Categories:</p>
+                                <button 
+                                    @click="showCategories = !showCategories"
+                                    class="text-base text-blue-400 hover:text-blue-300">
+                                    <span x-text="showCategories ? 'Hide Categories' : 'Click to Show Categories'"></span>
+                                </button>
+                            </div>
+                            <div class="flex flex-wrap gap-1" x-show="showCategories">
+                                {% for cat in manga.categories %}
+                                    <span class="bg-gray-700 text-gray-300 px-2 py-1 rounded text-sm">
+                                        {{ cat.category }}
+                                    </span>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    {% endif %}
                 </div>
 
                 {% if manga.description %}
                 <div class="p-4 bg-[#0d1117] rounded-lg border border-gray-700">
                     <div>
                         <h2 class="text-xl font-semibold mb-2">Description</h2>
-                        <div class="text-gray-300 text-base prose prose-invert max-w-none [&_a]:text-blue-400 [&_a]:hover:underline whitespace-pre-wrap break-words">{{ manga.description }}</div>
+                        <div class="text-gray-300 text-base prose prose-invert max-w-none [&_a]:text-blue-400 [&_a]:hover:underline whitespace-pre-wrap break-words">{{ manga.description|safe }}</div>
                     </div>
                 </div>
                 {% endif %}
@@ -151,11 +171,31 @@
                     </div>
                 </div>
             {% endif %}
-            
+
+            {% if manga.categories %}
+                <div class="mb-3" x-data="{ showCategories: false }">
+                    <div class="flex items-center gap-2 mb-1">
+                        <p class="text-base">Categories:</p>
+                        <button 
+                            @click="showCategories = !showCategories"
+                            class="text-xs text-blue-400 hover:text-blue-300">
+                            <span x-text="showCategories ? 'Hide Categories' : 'Show Categories'"></span>
+                        </button>
+                    </div>
+                    <div class="flex flex-wrap gap-2" x-show="showCategories" x-transition>
+                        {% for cat in manga.categories %}
+                            <span class="bg-gray-700 text-gray-300 px-2 py-1 rounded text-xs">
+                                {{ cat.category }}
+                            </span>
+                        {% endfor %}
+                    </div>
+                </div>
+            {% endif %}
+                        
             {% if manga.description %}
                 <div class="mt-4">
                     <h2 class="text-lg font-semibold mb-2">Description</h2>
-                    <div class="text-gray-300 text-sm prose prose-invert max-w-none [&_a]:text-blue-400 [&_a]:hover:underline whitespace-pre-wrap break-words">{{ manga.description }}</div>
+                    <div class="text-gray-300 text-sm prose prose-invert max-w-none [&_a]:text-blue-400 [&_a]:hover:underline whitespace-pre-wrap break-words">{{ manga.description|safe }}</div>
                 </div>
             {% endif %}
             
