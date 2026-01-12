@@ -203,8 +203,8 @@ def series_list(request):
 
 
 
-def series_detail(request, series_id):
-    """Series detail page"""
+def _fetch_manga_detail(series_id):
+    """Fetch manga details from API and apply transformations"""
     manga_detail = None
     error_message = None
 
@@ -248,6 +248,46 @@ def series_detail(request, series_id):
                     "name": a["name"]
                 })
 
+    return manga_detail, error_message
+
+def series_detail(request, series_id):
+    """Series detail page - check cache, load skeleton or content directly"""
+    context = {
+        "series_id": series_id,
+    }
+    
+    # Check if data is cached
+    cache_key = f"manga_detail_{series_id}"
+    
+    if cache.get(cache_key):
+        # Data is cached, fetch and render directly
+        manga_detail, error_message = _fetch_manga_detail(series_id)
+        show_nsfw = request.session.get('show_nsfw', False)
+        
+        context.update({
+            "manga": manga_detail,
+            "error_message": error_message,
+            "show_nsfw": show_nsfw
+        })
+        
+        # If HTMX request, return the partial
+        if request.headers.get("HX-Request") == "true":
+            return render(request, "src/series_detail/series_detail_partial.html", context)
+        
+        # Full page load with cached content - render full page with partial directly
+        return render(request, "src/series_detail/series_detail_full.html", context)
+    
+    # Data not cached, show skeleton
+    # If HTMX request, return just the skeleton without base template
+    if request.headers.get("HX-Request") == "true":
+        return render(request, "src/series_detail/series_detail_skeleton.html", context)
+    
+    return render(request, "src/series_detail/series_detail.html", context)
+
+def series_detail_content(request, series_id):
+    """Lazy load series detail content via HTMX - fetches from API"""
+    manga_detail, error_message = _fetch_manga_detail(series_id)
+    
     print(f"Final context - manga exists: {manga_detail is not None}, has description: {'description' in manga_detail if manga_detail else False}")
     
     # Get NSFW setting from session (default to False)
@@ -260,11 +300,7 @@ def series_detail(request, series_id):
         "show_nsfw": show_nsfw
     }
 
-    if request.headers.get("HX-Request") == "true":
-        print(f"HTMX Request detected")
-        return render(request, "src/series_detail/series_detail_partial.html", context)
-
-    return render(request, "src/series_detail/series_detail.html", context)
+    return render(request, "src/series_detail/series_detail_partial.html", context)
 
 def toggle_nsfw(request):
     """Toggle NSFW content visibility"""
@@ -314,7 +350,8 @@ def toggle_nsfw(request):
     # Fallback for non-HTMX requests
     return render(request, "components/navbar.html", {'show_nsfw': not show_nsfw})
 
-def author_detail(request, author_id):
+def _fetch_author_detail(author_id):
+    """Fetch author details and series from API"""
     cache_key = f"author_detail_{author_id}"
     series_cache_key = f"author_series_{author_id}"
     
@@ -366,19 +403,62 @@ def author_detail(request, author_id):
             print(f"Error fetching author series: {e}")
             author_series = None
 
+    return author, author_series, error_message
+
+def author_detail(request, author_id):
+    """Author detail page - check cache, load skeleton or content directly"""
+    context = {
+        "author_id": author_id,
+    }
+    
+    # Check if data is cached
+    cache_key = f"author_detail_{author_id}"
+    series_cache_key = f"author_series_{author_id}"
+    
+    if cache.get(cache_key) and cache.get(series_cache_key):
+        # Both data is cached, fetch and render directly
+        author, author_series, error_message = _fetch_author_detail(author_id)
+        show_nsfw = request.session.get('show_nsfw', False)
+        
+        context.update({
+            "author": author,
+            "author_series": author_series,
+            "error_message": error_message,
+            "show_nsfw": show_nsfw
+        })
+        
+        # If HTMX request, return the partial
+        if request.headers.get("HX-Request") == "true":
+            return render(request, "src/author_detail/author_detail_partial.html", context)
+        
+        # Full page load with cached content - render full page with partial directly
+        return render(request, "src/author_detail/author_detail_full.html", context)
+    
+    # Data not cached, show skeleton
+    # If HTMX request, return just the skeleton without base template
+    if request.headers.get("HX-Request") == "true":
+        return render(request, "src/author_detail/author_detail_skeleton.html", context)
+    
+    return render(request, "src/author_detail/author_detail.html", context)
+
+def author_detail_content(request, author_id):
+    """Lazy load author detail content via HTMX - fetches from API"""
+    author, author_series, error_message = _fetch_author_detail(author_id)
+
     show_nsfw = request.session.get('show_nsfw', False)
 
     context = {
+        "author_id": author_id,
         "author": author,
         "author_series": author_series,
         "error_message": error_message,
         "show_nsfw": show_nsfw
     }   
-    
-    if request.headers.get("HX-Request") == "true":
-        return render(request, "src/author_detail/author_detail_partial.html", context)
 
-    return render(request, "src/author_detail/author_detail.html", context)
+    return render(request, "src/author_detail/author_detail_partial.html", context)
+
+
+
 
 
 

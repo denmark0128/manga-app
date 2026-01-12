@@ -1,5 +1,11 @@
 {% extends "base.html" %}
 
 {% block content %}
-    {% include "src/author_detail/author_detail_partial.html" %}
+    <div id="author-detail-content"
+         hx-get="{% url 'author_detail_content' author_id %}"
+         hx-trigger="load"
+         hx-swap="innerHTML">
+        <!-- Show skeleton while loading -->
+        {% include "src/author_detail/author_detail_skeleton.html" %}
+    </div>
 {% endblock %}

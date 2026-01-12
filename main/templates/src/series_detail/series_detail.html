@@ -1,5 +1,11 @@
 {% extends "base.html" %}
 
 {% block content %}
-    {% include "src/series_detail/series_detail_partial.html" %}
+    <div id="series-detail-content"
+         hx-get="{% url 'series_detail_content' series_id %}"
+         hx-trigger="load"
+         hx-swap="innerHTML">
+        <!-- Show skeleton while loading -->
+        {% include "src/series_detail/series_detail_skeleton.html" %}
+    </div>
 {% endblock %}

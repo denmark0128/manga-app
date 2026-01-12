@@ -1,0 +1,39 @@
+<!-- Author Skeleton Loading State -->
+<div id="author-detail-content"
+     hx-get="{% url 'author_detail_content' author_id %}"
+     hx-trigger="load"
+     hx-swap="innerHTML"
+    >
+    <div class="author-page p-4">
+        
+        <div class="bg-[#0d1117] p-4 rounded-lg border border-gray-700">
+            <div class="flex flex-col md:flex-row md:space-x-6">
+                <!-- Image skeleton -->
+                <div class="flex-shrink-0 mb-4 md:mb-4">
+                    <div class="h-64 w-full max-w-xs rounded-lg bg-gray-300 md:w-64"></div>
+                </div>
+                
+                <!-- Content skeleton -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 flex-1 w-full">
+                    <div class="col-span-1 sm:col-span-2 md:col-span-4 h-8 bg-gray-700 rounded"></div>
+                    
+                    <div class="h-4 animate-pulse bg-gray-700 rounded"></div>
+                    <div class="h-4 animate-pulse bg-gray-700 rounded"></div>
+                    <div class="h-4 animate-pulse bg-gray-700 rounded"></div>
+                    <div class="h-4 animate-pulse bg-gray-700 rounded"></div>
+                </div>
+            </div>
+            
+            <!-- Series section skeleton -->
+            <div class="mt-6">
+                <div class="h-6 bg-gray-700 rounded w-48 mb-4"></div>
+                <div class="space-y-3">
+                    <div class="h-10 bg-gray-700 rounded"></div>
+                    <div class="h-10 bg-gray-700 rounded"></div>
+                    <div class="h-10 bg-gray-700 rounded"></div>
+                    <div class="h-10 bg-gray-700 rounded"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
