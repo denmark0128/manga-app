@@ -16,7 +16,7 @@ class="flex gap-2 w-full sm:w-auto flex-1">
            required
            class="flex-1 px-3 py-2 rounded bg-gray-700 border border-gray-600 hover:border-gray-500 focus:border-blue-600 focus:ring focus:ring-blue-600/50 text-white placeholder-gray-400 transition-colors">
 
-    <button type="submit" class="px-4 py-2 bg-blue-800 hover:bg-blue-700 rounded font-medium transition-colors">Search</button>
+    <button type="submit" class="px-4 py-2 bg-blue-800 hover:bg-blue-700 active:scale-95 active:bg-blue-700 rounded font-medium transition-colors">Search</button>
 </form>
 <span id="loader" class="loading htmx-indicator"></span>
 </div>
@@ -63,14 +63,14 @@ class="flex gap-2 w-full sm:w-auto flex-1">
                                 {% if manga.record.genres %}
                                 <button
                                     @click.stop="showGenres = true"
-                                    class="text-xs underline text-gray-300 mb-3"
+                                    class="text-xs underline text-gray-300 mb-3 active:scale-95 active:bg-blue-800"
                                 >
                                     View genres
                                 </button>
                                 {% endif %}
 
                                 <button 
-                                    class="mt-6 bg-blue-900 px-3 py-2 rounded text-white text-sm"
+                                    class="mt-6 bg-blue-900 px-3 py-2 rounded text-white text-sm active:scale-95 active:bg-blue-800"
                                     hx-get="/series/{{ manga.record.series_id }}/"
                                     hx-target="#content"
                                     hx-push-url="true"
@@ -173,4 +173,4 @@ class="flex gap-2 w-full sm:w-auto flex-1">
     {% elif search_query %}
         <p>No results found for "{{ search_query }}"</p>
     {% endif %} 
-</div>
+</div>  

@@ -1,9 +1,12 @@
 <nav class="bg-gray-950 p-4 space-x-4 flex justify-between items-center" 
      x-data="{ showNsfw: {{ show_nsfw|lower }} }">
     <div class="space-x-4">
-        <a hx-get="/" hx-target="#content" hx-push-url="true" class="cursor-pointer">Home</a>
-        <a hx-get="/series/" hx-target="#content" hx-push-url="true" class="cursor-pointer">Series</a>
-         <a hx-get="/author/" hx-target="#content" hx-push-url="true" class="cursor-pointer">Authors</a>
+        <a hx-get="/" hx-target="#content" hx-push-url="true" class="transition
+         active:scale-95 active:text-gray-300 cursor-pointer">Home</a>
+        <a hx-get="/series/" hx-target="#content" hx-push-url="true" class="transition
+         active:scale-95 active:text-gray-300 cursor-pointer">Series</a>
+         <a hx-get="/author/" hx-target="#content" hx-push-url="true" class="transition
+         active:scale-95 active:text-gray-300 cursor-pointer">Authors</a>
     </div>
     
     <!-- NSFW Toggle -->
@@ -15,8 +18,13 @@
         {% csrf_token %}
         <button 
             type="submit"
-            class="px-3 py-1 rounded text-sm"
-            :class="showNsfw ? 'bg-red-900 hover:bg-red-700' : 'bg-gray-700 hover:bg-gray-600'"
+            class="px-3 py-1 rounded text-sm
+                transition
+                active:scale-95 active:translate-y-[1px]
+                "
+            :class="showNsfw 
+                ? 'bg-red-900 hover:bg-red-700 active:bg-red-800' 
+                : 'bg-gray-700 hover:bg-gray-600 active:bg-gray-500'"
             x-text="showNsfw ? 'NSFW: ON' : 'NSFW: OFF'"
         >
         </button>
