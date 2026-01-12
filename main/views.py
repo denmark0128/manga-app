@@ -227,6 +227,8 @@ def _fetch_manga_detail(series_id):
                 manga_detail = response.json()
                 if manga_detail.get("description"):
                     manga_detail["description"] = parse_markdown_links(manga_detail["description"])
+                if manga_detail.get("status"):
+                    manga_detail["status"] = parse_markdown_links(manga_detail["status"])
                 print(f"API Response keys: {manga_detail.keys() if manga_detail else 'None'}")
                 print(f"Has description: {'description' in manga_detail if manga_detail else False}")
                 cache.set(cache_key, manga_detail, 60 * 60)

@@ -29,7 +29,48 @@
                     <p class="text-gray-400 mb-1 text-sm">Rating: {{ manga.bayesian_rating }}</p>
                 {% endif %}
 
-                
+                {% if manga.status %}
+                    <p class="text-gray-400 mb-1 text-sm">Status: {{ manga.status|safe }}</p>
+                {% endif %}
+
+                {% if manga.licensed %}
+                    <p class="text-gray-400 mb-1 text-sm">Licensed: <span class="text-green-400">Yes</span></p>
+                {% endif %}
+
+                {% if manga.completed %}
+                    <p class="text-gray-400 mb-1 text-sm">Completed: <span class="text-green-400">Yes</span></p>
+                {% endif %}
+
+                {% if manga.anime %}
+                    <div class="text-gray-400 mb-1 text-sm">
+                        Anime: 
+                        {% if manga.anime.start %}{{ manga.anime.start }}{% endif %}
+                        {% if manga.anime.end %} - {{ manga.anime.end }}{% endif %}
+                    </div>
+                {% endif %}
+
+                {% if manga.publishers %}
+                    <p class="text-gray-400 mb-1 text-sm">
+                        Publisher:
+                        {% for publisher in manga.publishers %}
+                            {{ publisher.publisher_name }}{% if not forloop.last %}, {% endif %}
+                        {% endfor %}
+                    </p>
+                {% endif %}
+
+                {% if manga.publications %}
+
+                    <p class="text-gray-400 mb-1 text-sm">
+                        Publication:
+                        {% for publication in manga.publications %}
+                            {{ publication.publication_name }}{% if not forloop.last %}, {% endif %}
+                        {% endfor %}
+                    </p>
+
+                {% endif %}
+
+            
+
                 {% if manga.authors_clean %}
                     <p class="text-gray-400 mb-1 text-sm">
                         Author:
@@ -76,6 +117,35 @@
                     
                     {% if manga.bayesian_rating %}
                         <p class="text-gray-400 mb-2 text-base">Rating: {{ manga.bayesian_rating }}</p>
+                    {% endif %}
+                    
+                    {% if manga.status %}
+                        <p class="text-gray-400 mb-2 text-base">Status: {{ manga.status|safe }}</p>
+                    {% endif %}
+                    
+                    {% if manga.licensed %}
+                        <p class="text-gray-400 mb-2 text-base">Licensed: <span class="text-green-400">Yes</span></p>
+                    {% endif %}
+                    
+                    {% if manga.completed %}
+                        <p class="text-gray-400 mb-2 text-base">Completed: <span class="text-green-400">Yes</span></p>
+                    {% endif %}
+                    
+                    {% if manga.anime %}
+                        <p class="text-gray-400 mb-2 text-base">
+                            Anime: 
+                            {% if manga.anime.start %}{{ manga.anime.start }}{% endif %}
+                            {% if manga.anime.end %} - {{ manga.anime.end }}{% endif %}
+                        </p>
+                    {% endif %}
+                    
+                    {% if manga.publishers %}
+                        <p class="text-gray-400 mb-2 text-base">
+                            Publisher:
+                            {% for publisher in manga.publishers %}
+                                {{ publisher.publisher_name }}{% if not forloop.last %}, {% endif %}
+                            {% endfor %}
+                        </p>
                     {% endif %}
                     
                     {% if manga.authors_clean %}
@@ -156,6 +226,48 @@
                         </ul>
                     </div>
                 {% endif %}
+                
+                {% if manga.recommendations %}
+                    <div class="mt-4">
+                        <h2 class="text-xl font-semibold mb-3">Recommendations</h2>
+                        <div class="grid grid-cols-3 gap-4">
+                            {% for recommendation in manga.recommendations %}
+                                <a hx-get="/series/{{ recommendation.series_id }}/"
+                                   hx-target="#content"
+                                   hx-push-url="true"
+                                   class="text-blue-400 hover:text-blue-300 cursor-pointer">
+                                    {% if recommendation.series_image.url.thumb %}
+                                        <img src="{{ recommendation.series_image.url.thumb }}"
+                                             alt="{{ recommendation.series_name }}"
+                                             class="w-full h-auto object-cover rounded mb-2 hover:scale-105 transition-transform">
+                                    {% endif %}
+                                    <p class="text-sm break-words">{{ recommendation.series_name }}</p>
+                                </a>
+                            {% endfor %}
+                        </div>
+                    </div>
+                {% endif %}
+                
+                {% if manga.category_recommendations %}
+                    <div class="mt-4">
+                        <h2 class="text-xl font-semibold mb-3">Category Recommendations</h2>
+                        <div class="grid grid-cols-3 gap-4">
+                            {% for recommendation in manga.category_recommendations %}
+                                <a hx-get="/series/{{ recommendation.series_id }}/"
+                                   hx-target="#content"
+                                   hx-push-url="true"
+                                   class="text-blue-400 hover:text-blue-300 cursor-pointer">
+                                    {% if recommendation.series_image.url.thumb %}
+                                        <img src="{{ recommendation.series_image.url.thumb }}"
+                                             alt="{{ recommendation.series_name }}"
+                                             class="w-full h-auto object-cover rounded mb-2 hover:scale-105 transition-transform">
+                                    {% endif %}
+                                    <p class="text-sm break-words">{{ recommendation.series_name }}</p>
+                                </a>
+                            {% endfor %}
+                        </div>
+                    </div>
+                {% endif %}
             </div>
         </div>
         
@@ -215,6 +327,48 @@
                             </li>
                         {% endfor %}
                     </ul>
+                </div>
+            {% endif %}
+
+            {% if manga.recommendations %}
+                <div class="mt-4">
+                    <h2 class="text-lg font-semibold mb-3">Recommendations</h2>
+                    <div class="grid grid-cols-2 gap-3">
+                        {% for recommendation in manga.recommendations %}
+                            <a hx-get="/series/{{ recommendation.series_id }}/"
+                               hx-target="#content"
+                               hx-push-url="true"
+                               class="text-blue-400 hover:text-blue-300 cursor-pointer">
+                                {% if recommendation.series_image.url.thumb %}
+                                    <img src="{{ recommendation.series_image.url.thumb }}"
+                                         alt="{{ recommendation.series_name }}"
+                                         class="w-full h-auto object-cover rounded mb-1 hover:scale-105 transition-transform">
+                                {% endif %}
+                                <p class="text-sm break-words">{{ recommendation.series_name }}</p>
+                            </a>
+                        {% endfor %}
+                    </div>
+                </div>
+            {% endif %}
+            
+            {% if manga.category_recommendations %}
+                <div class="mt-4">
+                    <h2 class="text-lg font-semibold mb-3">Category Recommendations</h2>
+                    <div class="grid grid-cols-2 gap-3">
+                        {% for recommendation in manga.category_recommendations %}
+                            <a hx-get="/series/{{ recommendation.series_id }}/"
+                               hx-target="#content"
+                               hx-push-url="true"
+                               class="text-blue-400 hover:text-blue-300 cursor-pointer">
+                                {% if recommendation.series_image.url.thumb %}
+                                    <img src="{{ recommendation.series_image.url.thumb }}"
+                                         alt="{{ recommendation.series_name }}"
+                                         class="w-full h-auto object-cover rounded mb-1 hover:scale-105 transition-transform">
+                                {% endif %}
+                                <p class="text-sm break-words">{{ recommendation.series_name }}</p>
+                            </a>
+                        {% endfor %}
+                    </div>
                 </div>
             {% endif %}
         </div>
